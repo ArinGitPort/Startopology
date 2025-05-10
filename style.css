@@ -1,0 +1,233 @@
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  background: var(--bg, #f7f9fc);
+  margin: 0;
+  padding: 0;
+  color: var(--text, #2c3e50);
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+
+.main-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 300px;
+  height: 100vh;
+  position: fixed;
+  right: 0;
+  top: 0;
+  background: var(--card, white);
+  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 10;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.main-content {
+  flex: 1;
+  margin-right: 300px;
+  padding: 0;
+}
+
+h1 {
+  color: var(--primary, #3498db);
+  font-weight: 600;
+  margin: 0;
+  padding: 15px 0;
+  text-align: center;
+  font-size: 24px;
+  transition: color 0.3s;
+  background: var(--card, white);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#network {
+  width: 95%;
+  height: 85vh;
+  background: var(--bg, #f7f9fc);
+  margin: 0 auto;
+  border-radius: 0;
+  box-shadow: none;
+  transition: background 0.3s;
+}
+
+.controls, 
+.packet-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+button {
+  background: var(--primary, #3498db);
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background: var(--secondary, #2980b9);
+  transform: translateY(-1px);
+}
+
+#resetAll {
+  background: var(--danger, #e74c3c);
+}
+
+#resetAll:hover {
+  background: var(--danger, #c0392b);
+}
+
+select {
+  padding: 10px 12px;
+  border: 1px solid var(--border, #e0e6ed);
+  border-radius: 4px;
+  background: var(--bg, white);
+  font-size: 14px;
+  color: var(--text, #2c3e50);
+  width: 100%;
+  transition: all 0.2s;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--primary, #3498db);
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+  padding: 12px;
+  background: var(--card, white);
+  border-radius: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text, #34495e);
+  transition: color 0.3s;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: none;
+}
+
+.status {
+  text-align: center;
+  padding: 10px;
+  background: var(--card, white);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  margin: 10px 0;
+  font-size: 14px;
+  color: var(--text, #2c3e50);
+  transition: background 0.3s, color 0.3s;
+}
+
+.active-connection {
+  color: var(--success, #27ae60);
+  font-weight: 600;
+}
+
+.inactive-connection {
+  color: var(--danger, #e74c3c);
+  font-weight: 600;
+}
+
+.log-container {
+  max-height: 300px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.03);
+  border-radius: 4px;
+  padding: 5px;
+  margin-top: 10px;
+}
+
+/* Dark theme specific changes */
+body.dark-theme .log-container {
+  background: rgba(0,0,0,0.2);
+}
+
+/* Hide edge node details from vis.js */
+.vis-network .vis-manipulation {
+  display: none;
+}
+
+/* Node hover effect */
+.vis-network .vis-node:hover {
+  cursor: pointer;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--secondary, #2980b9);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary, #3498db);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 250px;
+  }
+  
+  .main-content {
+    margin-right: 250px;
+  }
+  
+  #network {
+    height: 75vh;
+  }
+  
+  button, select {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 600px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    right: auto;
+  }
+  
+  .main-content {
+    margin-right: 0;
+  }
+  
+  .main-layout {
+    flex-direction: column-reverse;
+  }
+}

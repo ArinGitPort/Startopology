@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Star Topology Simulator</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      /* Packet animation styles */
+      .packet {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background-color: #FFEB3B;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(255, 235, 59, 0.8);
+        z-index: 1000;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      .packet-trail {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background-color: rgba(255, 235, 59, 0.5);
+        border-radius: 50%;
+        z-index: 999;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      .pulse-effect {
+        animation: pulse 0.5s ease-out;
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(2); opacity: 0; }
+      }
+
+      /* Dracula Theme Variables */
+      :root {
+        --bg-light: #f7f9fc;
+        --text-light: #2c3e50;
+        --primary-light: #3498db;
+        --secondary-light: #2980b9;
+        --danger-light: #e74c3c;
+        --success-light: #27ae60;
+        --card-light: #ffffff;
+        --border-light: #e0e6ed;
+
+        --bg-dark: #282a36;
+        --text-dark: #f8f8f2;
+        --primary-dark: #bd93f9;
+        --secondary-dark: #6272a4;
+        --danger-dark: #ff5555;
+        --success-dark: #50fa7b;
+        --card-dark: #44475a;
+        --border-dark: #6272a4;
+      }
+
+      body.light-theme {
+        --bg: var(--bg-light);
+        --text: var(--text-light);
+        --primary: var(--primary-light);
+        --secondary: var(--secondary-light);
+        --danger: var(--danger-light);
+        --success: var(--success-light);
+        --card: var(--card-light);
+        --border: var(--border-light);
+      }
+
+      body.dark-theme {
+        --bg: var(--bg-dark);
+        --text: var(--text-dark);
+        --primary: var(--primary-dark);
+        --secondary: var(--secondary-dark);
+        --danger: var(--danger-dark);
+        --success: var(--success-dark);
+        --card: var(--card-dark);
+        --border: var(--border-dark);
+      }
+
+      /* Theme Toggle Button */
+      #themeToggle {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      body.light-theme #themeToggle {
+        background: #282a36;
+        color: #f8f8f2;
+      }
+
+      body.dark-theme #themeToggle {
+        background: #f8f8f2;
+        color: #282a36;
+      }
+
+      /* Layout styles */
+      .main-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        width: 300px;
+        flex-shrink: 0;
+        padding: 20px;
+        overflow-y: auto;
+        height: 100vh;
+        position: fixed;
+        right: 0;
+        top: 0;
+        z-index: 10;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        margin-right: 300px;
+      }
+
+      /* Packet Log */
+      .packet-log {
+        margin-top: 30px;
+      }
+
+      .packet-log h2 {
+        font-size: 18px;
+        margin-bottom: 15px;
+        color: var(--primary);
+      }
+
+      .log-entry {
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        font-size: 14px;
+        background: rgba(255,255,255,0.1);
+      }
+
+      .log-entry.source {
+        border-left: 3px solid var(--primary);
+      }
+
+      .log-entry.target {
+        border-left: 3px solid var(--success);
+      }
+
+      .log-entry.error {
+        border-left: 3px solid var(--danger);
+      }
+
+      .log-container {
+        max-height: 300px;
+        overflow-y: auto;
+        border-radius: 4px;
+      }
+
+      .log-time {
+        color: var(--secondary);
+        font-size: 12px;
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body class="light-theme">
+    <button id="themeToggle">🌙 Dracula Theme</button>
+    
+    <div class="main-layout">
+      <div class="main-content">
+        <h1>Star Topology Simulator</h1>
+        
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-color" style="background: #1565c0"></span>Hub
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #4caf50"></span>Active Node
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #e53935"></span>Inactive Node
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background: #ffeb3b"></span>Data Packet
+          </div>
+        </div>
+        
+        <div id="network"></div>
+      </div>
+      
+      <div class="sidebar">
+        <h2>Controls</h2>
+        
+        <div class="controls">
+          <button id="toggleHub">Toggle Hub (ON)</button>
+          <button id="resetAll">Reset All</button>
+        </div>
+        
+        <div class="packet-controls">
+          <select id="sourceNode">
+            <option value="">Select Source Node</option>
+            <option value="node1">PC 1</option>
+            <option value="node2">PC 2</option>
+            <option value="node3">PC 3</option>
+            <option value="node4">PC 4</option>
+            <option value="node5">PC 5</option>
+            <option value="node6">PC 6</option>
+          </select>
+          <select id="targetNode">
+            <option value="">Select Target Node</option>
+            <option value="node1">PC 1</option>
+            <option value="node2">PC 2</option>
+            <option value="node3">PC 3</option>
+            <option value="node4">PC 4</option>
+            <option value="node5">PC 5</option>
+            <option value="node6">PC 6</option>
+          </select>
+          <button id="sendPacket">Send Packet</button>
+          <button id="autoSimulate">Auto Simulate</button>
+        </div>
+        
+        <div class="status" id="status">
+          All connections <span class="active-connection">ACTIVE</span>
+        </div>
+        
+        <div class="status" id="packetStatus"></div>
+        
+        <div class="packet-log">
+          <h2>Packet Log</h2>
+          <div class="log-container" id="packetLog"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const ipConfigurations = {
+        hub: "192.168.1.1",
+        node1: "192.168.1.2",
+        node2: "192.168.1.3",
+        node3: "192.168.1.4",
+        node4: "192.168.1.5",
+        node5: "192.168.1.6",
+        node6: "192.168.1.7",
+      };
+
+      const HUB_ACTIVE = "#1565C0";
+      const HUB_INACTIVE = "#E53935";
+      const NODE_ACTIVE = "#4CAF50";
+      const NODE_INACTIVE = "#E53935";
+      const PACKET_COLOR = "#FFEB3B";
+      const PACKET_SPEED = 750;
+
+      let data, network;
+      let hubActive = true;
+      let nodeStatus = {};
+      let blinkInterval;
+      let isAnimatingPacket = false;
+      let autoSimulateInterval = null;
+      let packetElements = [];
+      let packetLogEntries = [];
+
+      // Theme toggle
+      document.getElementById("themeToggle").addEventListener("click", function() {
+        const body = document.body;
+        if (body.classList.contains("light-theme")) {
+          body.classList.remove("light-theme");
+          body.classList.add("dark-theme");
+          this.textContent = "☀️ Light Theme";
+        } else {
+          body.classList.remove("dark-theme");
+          body.classList.add("light-theme");
+          this.textContent = "🌙 Dracula Theme";
+        }
+      });
+
+      function createNetwork() {
+        const nodes = [
+          {
+            id: "hub",
+            label: "Switch",
+            title: `IP: ${ipConfigurations.hub}`, // Tooltip added here
+            shape: "image",
+            image: "switch-hub.png",
+            size: 50,
+            font: { size: 16, color: "#000" },
+            fixed: true,
+            x: 0,
+            y: 0,
+            shapeProperties: { borderDashes: false },
+            borderWidth: 4,
+            borderWidthSelected: 4,
+            color: { border: HUB_ACTIVE, background: "rgba(255,255,255,0.7)" },
+          },
+        ];
+
+        const edges = [];
+        const radius = 300;
+
+        for (let i = 1; i <= 6; i++) {
+          const angle = (i - 1) * ((2 * Math.PI) / 6);
+          const x = radius * Math.cos(angle);
+          const y = radius * Math.sin(angle);
+          const nodeId = `node${i}`;
+          nodes.push({
+            id: nodeId,
+            label: `PC ${i}`,
+            title: `IP: ${ipConfigurations[nodeId]}`, // Tooltip added here
+            shape: "image",
+            image: "desktop.png",
+            size: 40,
+            font: { size: 14 },
+            fixed: true,
+            x,
+            y,
+            shapeProperties: { borderDashes: false },
+            borderWidth: 4,
+            borderWidthSelected: 4,
+            color: { border: NODE_ACTIVE, background: "rgba(255,255,255,0.7)" },
+          });
+          edges.push({
+            id: `edge${i}`,
+            from: "hub",
+            to: nodeId,
+            color: { color: "#000000" },
+            width: 2,
+          });
+          nodeStatus[nodeId] = true;
+        }
+
+        data = {
+          nodes: new vis.DataSet(nodes),
+          edges: new vis.DataSet(edges),
+        };
+
+        network = new vis.Network(document.getElementById("network"), data, {
+          physics: false,
+          interaction: {
+            dragNodes: false,
+            dragView: false,
+            zoomView: false,
+          },
+        });
+
+        network.on("click", (params) => {
+          if (params.nodes.length && params.nodes[0] !== "hub") {
+            toggleNode(params.nodes[0]);
+          }
+        });
+      }
+
+      // Log packet activity
+      function addLogEntry(message, type = "info") {
+        const logContainer = document.getElementById("packetLog");
+        const time = new Date().toLocaleTimeString();
+        
+        const entry = document.createElement("div");
+        entry.className = `log-entry ${type}`;
+        
+        const timeSpan = document.createElement("div");
+        timeSpan.className = "log-time";
+        timeSpan.textContent = time;
+        
+        const messageDiv = document.createElement("div");
+        messageDiv.innerHTML = message;
+        
+        entry.appendChild(timeSpan);
+        entry.appendChild(messageDiv);
+        
+        // Keep only the latest 50 entries
+        packetLogEntries.push(entry);
+        if (packetLogEntries.length > 50) {
+          packetLogEntries.shift();
+        }
+        
+        // Clear and repopulate the log
+        logContainer.innerHTML = "";
+        packetLogEntries.forEach(item => {
+          logContainer.appendChild(item);
+        });
+        
+        // Scroll to bottom
+        logContainer.scrollTop = logContainer.scrollHeight;
+      }
+
+      function toggleNode(nodeId) {
+        nodeStatus[nodeId] = !nodeStatus[nodeId];
+        const status = nodeStatus[nodeId] ? "active" : "inactive";
+        addLogEntry(`Node ${nodeId.replace("node", "PC ")} is now <span class="${status}-connection">${status.toUpperCase()}</span>`, "info");
+        updateVisuals();
+      }
+
+      function toggleHub() {
+        hubActive = !hubActive;
+        document.getElementById("toggleHub").textContent = `Toggle Hub (${
+          hubActive ? "ON" : "OFF"
+        })`;
+        const status = hubActive ? "active" : "inactive";
+        addLogEntry(`Hub is now <span class="${status}-connection">${status.toUpperCase()}</span>`, hubActive ? "info" : "error");
+        updateVisuals();
+      }
+
+      function resetAll() {
+        hubActive = true;
+        for (let id in nodeStatus) nodeStatus[id] = true;
+        document.getElementById("toggleHub").textContent = `Toggle Hub (ON)`;
+        addLogEntry("All nodes and hub have been reset to <span class=\"active-connection\">ACTIVE</span>", "info");
+        updateVisuals();
+      }
+
+      function updateVisuals() {
+        // Update hub visual state
+        const hubNode = data.nodes.get("hub");
+        if (hubActive) {
+          hubNode.borderWidth = 4;
+          hubNode.borderWidthSelected = 4;
+          hubNode.color = { border: HUB_ACTIVE };
+        } else {
+          hubNode.borderWidth = 4;
+          hubNode.borderWidthSelected = 4;
+          hubNode.color = { border: HUB_INACTIVE };
+        }
+        data.nodes.update(hubNode);
+
+        // Update each node's visual state
+        for (let i = 1; i <= 6; i++) {
+          const nodeId = `node${i}`;
+          const edgeId = `edge${i}`;
+          const active = nodeStatus[nodeId] && hubActive;
+
+          // Update node appearance
+          const node = data.nodes.get(nodeId);
+          node.borderWidth = 4;
+          node.borderWidthSelected = 4;
+          node.color = {
+            border: nodeStatus[nodeId] ? NODE_ACTIVE : NODE_INACTIVE,
+          };
+          data.nodes.update(node);
+
+          // Update edge appearance
+          data.edges.update({
+            id: edgeId,
+            color: {
+              color: active ? "#000000" : "#E53935",
+              opacity: 1,
+            },
+            width: 2,
+            dashes: !active, // dashes for inactive connections
+          });
+        }
+
+        updateStatusText();
+
+        // Force blinking to restart after updating visuals
+        if (blinkInterval) {
+          clearInterval(blinkInterval);
+          blinkInactiveEdges();
+        }
+      }
+
+      function updateStatusText() {
+        const statusEl = document.getElementById("status");
+        if (!hubActive) {
+          statusEl.innerHTML =
+            'Hub is <span class="inactive-connection">OFF</span> - All connections inactive';
+          return;
+        }
+
+        const activeCount = Object.values(nodeStatus).filter(Boolean).length;
+        if (activeCount === 6) {
+          statusEl.innerHTML =
+            'All connections <span class="active-connection">ACTIVE</span>';
+        } else if (activeCount === 0) {
+          statusEl.innerHTML =
+            'All nodes <span class="inactive-connection">INACTIVE</span>';
+        } else {
+          statusEl.innerHTML = `<span class="active-connection">${activeCount}</span> active, <span class="inactive-connection">${
+            6 - activeCount
+          }</span> inactive`;
+        }
+      }
+
+      function blinkInactiveEdges() {
+        let toggle = false;
+        clearInterval(blinkInterval);
+        blinkInterval = setInterval(() => {
+          for (let i = 1; i <= 6; i++) {
+            const nodeId = `node${i}`;
+            const edgeId = `edge${i}`;
+            const active = nodeStatus[nodeId] && hubActive;
+
+            if (!active) {
+              // For inactive connections, blink the edges
+              data.edges.update({
+                id: edgeId,
+                color: { color: toggle ? "#E53935" : "#FF0000" }, // Dark red to bright red blink
+                dashes: true,
+                width: toggle ? 2 : 3, // Slightly change width for more visible blinking
+              });
+            }
+          }
+          toggle = !toggle;
+        }, 500);
+      }
+
+      // Create visual packet
+      function createPacketElement() {
+        const packet = document.createElement('div');
+        packet.className = 'packet';
+        document.querySelector('#network').appendChild(packet);
+        return packet;
+      }
+      
+      // Create packet trail
+      function createTrailElement() {
+        const trail = document.createElement('div');
+        trail.className = 'packet-trail';
+        document.querySelector('#network').appendChild(trail);
+        return trail;
+      }
+      
+      // Clean up visual elements
+      function cleanupPacketElements() {
+        packetElements.forEach(element => {
+          if (element && element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
+        });
+        packetElements = [];
+      }
+      
+      // Add pulse effect to a node
+      function pulseEffect(nodeId) {
+        const nodePosition = network.getPositions([nodeId])[nodeId];
+        const canvas = document.querySelector('#network canvas');
+        const rect = canvas.getBoundingClientRect();
+        
+        // Calculate position in the DOM
+        const centerX = rect.left + (rect.width / 2);
+        const centerY = rect.top + (rect.height / 2);
+        const x = centerX + nodePosition.x;
+        const y = centerY + nodePosition.y;
+        
+        // Create pulse element
+        const pulse = document.createElement('div');
+        pulse.className = 'packet pulse-effect';
+        pulse.style.left = `${x}px`;
+        pulse.style.top = `${y}px`;
+        document.body.appendChild(pulse);
+        packetElements.push(pulse);
+        
+        // Remove after animation completes
+        setTimeout(() => {
+          if (pulse.parentNode) pulse.parentNode.removeChild(pulse);
+          const index = packetElements.indexOf(pulse);
+          if (index !== -1) packetElements.splice(index, 1);
+        }, 500);
+      }
+
+      function sendPacket(source = null, target = null) {
+        // Prevent multiple animations running at once
+        if (isAnimatingPacket) {
+          return;
+        }
+
+        // If source and target aren't provided, get them from the selects
+        if (!source || !target) {
+          const sourceSelect = document.getElementById("sourceNode");
+          const targetSelect = document.getElementById("targetNode");
+          source = sourceSelect.value;
+          target = targetSelect.value;
+        }
+        
+        const packetStatusEl = document.getElementById("packetStatus");
+
+        if (!source || !target) {
+          packetStatusEl.innerHTML =
+            '<span class="inactive-connection">Please select both source and target nodes</span>';
+          addLogEntry("Packet transmission failed: Source or target not selected", "error");
+          return;
+        }
+
+        if (source === target) {
+          packetStatusEl.innerHTML =
+            '<span class="inactive-connection">Source and target cannot be the same</span>';
+          addLogEntry("Packet transmission failed: Source and target are the same", "error");
+          return;
+        }
+
+        if (!hubActive) {
+          packetStatusEl.innerHTML =
+            '<span class="inactive-connection">Cannot send packet: Hub is OFF</span>';
+          addLogEntry("Packet transmission failed: Hub is OFF", "error");
+          return;
+        }
+
+        if (!nodeStatus[source]) {
+          packetStatusEl.innerHTML = `<span class="inactive-connection">Cannot send packet: Source ${source.replace(
+            "node",
+            "PC "
+          )} is inactive</span>`;
+          addLogEntry(`Packet transmission failed: Source ${source.replace("node", "PC ")} is inactive`, "error");
+          return;
+        }
+
+        if (!nodeStatus[target]) {
+          packetStatusEl.innerHTML = `<span class="inactive-connection">Cannot send packet: Target ${target.replace(
+            "node",
+            "PC "
+          )} is inactive</span>`;
+          addLogEntry(`Packet transmission failed: Target ${target.replace("node", "PC ")} is inactive`, "error");
+          return;
+        }
+
+        // Successfully sending packet
+        packetStatusEl.innerHTML = `<span class="active-connection">Sending packet from ${source.replace(
+          "node",
+          "PC "
+        )} to ${target.replace("node", "PC ")}</span>`;
+        
+        addLogEntry(`Sending packet from ${source.replace("node", "PC ")} (${ipConfigurations[source]}) to ${target.replace("node", "PC ")} (${ipConfigurations[target]})`, "source");
+
+        isAnimatingPacket = true;
+
+        // Temporarily pause blinking during animation
+        clearInterval(blinkInterval);
+        
+        // Clean up any existing packet elements
+        cleanupPacketElements();
+
+        // Add pulse effect to source node
+        pulseEffect(source);
+
+        // Animate the packet using the edges
+        setTimeout(() => {
+          animatePacket(source, target);
+        }, 300);
+      }
+
+      function animatePacket(source, target) {
+        // Get source, hub, and target positions
+        const positions = network.getPositions([source, "hub", target]);
+        const sourcePos = positions[source];
+        const hubPos = positions["hub"];
+        const targetPos = positions[target];
+        
+        // Get DOM positions from network positions
+        const canvas = document.querySelector('#network canvas');
+        const rect = canvas.getBoundingClientRect();
+        const centerX = rect.left + (rect.width / 2);
+        const centerY = rect.top + (rect.height / 2);
+        
+        // Step 1: Animate from source to hub
+        addLogEntry(`Packet traveling from ${source.replace("node", "PC ")} to hub`, "info");
+        animatePacketAlongPath(
+          sourcePos.x, sourcePos.y,
+          hubPos.x, hubPos.y,
+          centerX, centerY,
+          () => {
+            // Add pulse effect to hub
+            pulseEffect("hub");
+            addLogEntry(`Packet arrived at hub, processing routing`, "info");
+            
+            // Step 2: After reaching hub, animate to target
+            setTimeout(() => {
+              addLogEntry(`Packet traveling from hub to ${target.replace("node", "PC ")}`, "info");
+              animatePacketAlongPath(
+                hubPos.x, hubPos.y,
+                targetPos.x, targetPos.y,
+                centerX, centerY,
+                () => {
+                  // Add pulse effect to target node
+                  pulseEffect(target);
+                  
+                  // Update status
+                  document.getElementById("packetStatus").innerHTML = 
+                    `<span class="active-connection">Packet successfully delivered from ${source.replace(
+                      "node", "PC "
+                    )} to ${target.replace("node", "PC ")}</span>`;
+                  
+                  addLogEntry(`Packet successfully delivered to ${target.replace("node", "PC ")} (${ipConfigurations[target]})`, "target");
+                  
+                  // Animation complete
+                  isAnimatingPacket = false;
+                  
+                  // Restart blinking for inactive edges
+                  blinkInactiveEdges();
+                }
+              );
+            }, 300); // Wait a bit at the hub
+          }
+        );
+      }
+
+      // Animate packet along a path with requestAnimationFrame for smooth motion
+      function animatePacketAlongPath(x1, y1, x2, y2, centerX, centerY, onComplete) {
+        const packet = createPacketElement();
+        packetElements.push(packet);
+        
+        const startX = centerX + x1;
+        const startY = centerY + y1;
+        const endX = centerX + x2;
+        const endY = centerY + y2;
+        
+        // Duration in milliseconds
+        const duration = PACKET_SPEED;
+        const startTime = performance.now();
+        
+        // Setup for trailing effect
+        const trailInterval = 100; // ms between trail elements
+        let lastTrailTime = 0;
+        
+        // Animation function
+        function animate(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Ease in-out function for smoother movement
+          const easedProgress = progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+          
+          // Calculate current position
+          const currentX = startX + (endX - startX) * easedProgress;
+          const currentY = startY + (endY - startY) * easedProgress;
+          
+          // Set packet position
+          packet.style.left = `${currentX}px`;
+          packet.style.top = `${currentY}px`;
+          
+          // Create trail effect
+          if (currentTime - lastTrailTime > trailInterval && progress > 0.1 && progress < 0.9) {
+            lastTrailTime = currentTime;
+            const trail = createTrailElement();
+            trail.style.left = `${currentX}px`;
+            trail.style.top = `${currentY}px`;
+            packetElements.push(trail);
+            
+            // Fade out and remove trail element
+            setTimeout(() => {
+              if (trail.parentNode) {
+                trail.style.opacity = '0';
+                setTimeout(() => {
+                  if (trail.parentNode) trail.parentNode.removeChild(trail);
+                  const index = packetElements.indexOf(trail);
+                  if (index !== -1) packetElements.splice(index, 1);
+                }, 300);
+              }
+            }, 200);
+          }
+          
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            // Animation complete
+            setTimeout(() => {
+              if (packet.parentNode) packet.parentNode.removeChild(packet);
+              const index = packetElements.indexOf(packet);
+              if (index !== -1) packetElements.splice(index, 1);
+              
+              if (onComplete) onComplete();
+            }, 100);
+          }
+        }
+        
+        // Start animation
+        requestAnimationFrame(animate);
+      }
+
+      // New function for auto simulation
+      function autoSimulate() {
+        const button = document.getElementById("autoSimulate");
+        
+        if (autoSimulateInterval) {
+          // Stop auto simulation
+          clearInterval(autoSimulateInterval);
+          autoSimulateInterval = null;
+          button.textContent = "Auto Simulate";
+          addLogEntry("Auto simulation stopped", "info");
+          return;
+        }
+        
+        // Start auto simulation
+        button.textContent = "Stop Auto Simulate";
+        addLogEntry("Auto simulation started", "info");
+        
+        autoSimulateInterval = setInterval(() => {
+          if (isAnimatingPacket) return; // Don't start new animation if one is in progress
+          
+          // Get all active nodes
+          const activeNodes = [];
+          for (let i = 1; i <= 6; i++) {
+            const nodeId = `node${i}`;
+            if (nodeStatus[nodeId] && hubActive) {
+              activeNodes.push(nodeId);
+            }
+          }
+          
+          // If less than 2 active nodes, can't simulate
+          if (activeNodes.length < 2) {
+            document.getElementById("packetStatus").innerHTML = 
+              '<span class="inactive-connection">Need at least 2 active nodes for auto simulation</span>';
+            addLogEntry("Auto simulation: Need at least 2 active nodes", "error");
+            return;
+          }
+          
+          // Pick random source and target (but make sure they're different)
+          let source, target;
+          do {
+            source = activeNodes[Math.floor(Math.random() * activeNodes.length)];
+            target = activeNodes[Math.floor(Math.random() * activeNodes.length)];
+          } while (source === target);
+          
+          // Send packet between these random nodes
+          sendPacket(source, target);
+        }, PACKET_SPEED * 3); // Wait for animation to complete before starting next one
+      }
+
+      // Attach events
+      document.getElementById("toggleHub").addEventListener("click", () => {
+        toggleHub();
+        blinkInactiveEdges();
+      });
+
+      document.getElementById("resetAll").addEventListener("click", () => {
+        resetAll();
+        blinkInactiveEdges();
+      });
+
+      document
+        .getElementById("sendPacket")
+        .addEventListener("click", () => sendPacket());
+        
+      document
+        .getElementById("autoSimulate")
+        .addEventListener("click", autoSimulate);
+
+      // Initialize
+      createNetwork();
+      updateVisuals();
+      blinkInactiveEdges();
+      addLogEntry("Star Topology Simulator initialized", "info");
+    </script>
+  </body>
+</html>
