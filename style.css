@@ -46,13 +46,13 @@ h1 {
 }
 
 #network {
-  width: 95%;
-  height: 85vh;
+  width: 800px;
+  height: 800px;
   background: var(--bg, #f7f9fc);
-  margin: 0 auto;
-  border-radius: 0;
-  box-shadow: none;
-  transition: background 0.3s;
+  margin: 40px auto 0 auto; /* Top margin + horizontal center */
+  display: block;
+  position: relative;
+  box-sizing: border-box;
 }
 
 .controls, 

@@ -346,6 +346,9 @@
             dragView: false,
             zoomView: false,
           },
+          autoResize: false, // Prevent auto-resizing
+          height: "800px",
+          width: "800px",
         });
 
         network.on("click", (params) => {
@@ -538,23 +541,23 @@
       // Add pulse effect to a node
       function pulseEffect(nodeId) {
         const nodePosition = network.getPositions([nodeId])[nodeId];
-        const canvas = document.querySelector('#network canvas');
-        const rect = canvas.getBoundingClientRect();
-        
-        // Calculate position in the DOM
-        const centerX = rect.left + (rect.width / 2);
-        const centerY = rect.top + (rect.height / 2);
+        const networkDiv = document.getElementById('network');
+        const rect = networkDiv.getBoundingClientRect();
+
+        // Calculate position relative to #network
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
         const x = centerX + nodePosition.x;
         const y = centerY + nodePosition.y;
-        
+
         // Create pulse element
         const pulse = document.createElement('div');
         pulse.className = 'packet pulse-effect';
         pulse.style.left = `${x}px`;
         pulse.style.top = `${y}px`;
-        document.body.appendChild(pulse);
+        networkDiv.appendChild(pulse);
         packetElements.push(pulse);
-        
+
         // Remove after animation completes
         setTimeout(() => {
           if (pulse.parentNode) pulse.parentNode.removeChild(pulse);
@@ -700,14 +703,16 @@
 
       // Animate packet along a path with requestAnimationFrame for smooth motion
       function animatePacketAlongPath(x1, y1, x2, y2, centerX, centerY, onComplete) {
+        const networkDiv = document.getElementById('network');
         const packet = createPacketElement();
         packetElements.push(packet);
-        
-        const startX = centerX + x1;
-        const startY = centerY + y1;
-        const endX = centerX + x2;
-        const endY = centerY + y2;
-        
+
+        // Use #network's center for calculations
+        const startX = (networkDiv.clientWidth / 2) + x1;
+        const startY = (networkDiv.clientHeight / 2) + y1;
+        const endX = (networkDiv.clientWidth / 2) + x2;
+        const endY = (networkDiv.clientHeight / 2) + y2;
+
         // Duration in milliseconds
         const duration = PACKET_SPEED;
         const startTime = performance.now();
