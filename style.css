@@ -5,7 +5,7 @@ body {
   padding: 0;
   color: var(--text, #2c3e50);
   overflow-x: hidden;
-  transition: background 0.3s, color 0.3s;
+  transition: background 0.5s, color 0.5s;
 }
 
 .main-layout {
@@ -49,6 +49,7 @@ h1 {
   width: 800px;
   height: 800px;
   background: var(--bg, #f7f9fc);
+  background-image: radial-gradient(circle at 50% 50%, #e3e8f0 0%, transparent 70%);
   margin: 40px auto 0 auto; /* Top margin + horizontal center */
   display: block;
   position: relative;
@@ -77,6 +78,11 @@ button {
 button:hover {
   background: var(--secondary, #2980b9);
   transform: translateY(-1px);
+}
+
+button:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px #2980b933;
 }
 
 #resetAll {
@@ -176,6 +182,62 @@ body.dark-theme .log-container {
 /* Node hover effect */
 .vis-network .vis-node:hover {
   cursor: pointer;
+  filter: drop-shadow(0 0 12px var(--primary, #3498db));
+  transition: filter 0.2s;
+}
+
+/* --- Enhanced Packet and Trail Visuals --- */
+
+/* Packet: brighter, glowing, outlined */
+.packet {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffeb3b;
+  box-shadow: 0 0 16px 4px #ffe082, 0 0 0 2px #ff9800;
+  border: 2px solid #ff9800;
+  position: absolute;
+  z-index: 20;
+  transition: box-shadow 0.2s;
+  pointer-events: none;
+}
+
+/* Pulse effect for packet arrival */
+.pulse-effect {
+  animation: pulse 0.5s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 32px 8px #ffeb3b88;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Animated packet trail: more visible, gold-orange, glowing */
+.packet-trail {
+  background: linear-gradient(135deg, #ffd600 60%, #ff6f00 100%);
+  filter: blur(1.5px);
+  opacity: 0.92;
+  border: 1px solid #ff9800;
+  box-shadow: 0 0 12px 4px #ff980088;
+  transition: opacity 0.3s;
+}
+
+/* Even more visible trail in dark theme */
+body.dark-theme .packet-trail {
+  background: linear-gradient(135deg, #ffe082 60%, #ff9800 100%);
+  border: 1px solid #ffe082;
+  box-shadow: 0 0 16px 6px #ff980088;
 }
 
 /* Custom scrollbar */

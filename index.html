@@ -91,16 +91,21 @@
         border-radius: 20px;
         cursor: pointer;
         transition: all 0.3s ease;
+        border: 2px solid var(--border);
+        font-size: 15px;
+        font-weight: 500;
       }
 
       body.light-theme #themeToggle {
         background: #282a36;
         color: #f8f8f2;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       }
 
       body.dark-theme #themeToggle {
         background: #f8f8f2;
         color: #282a36;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
       }
 
       /* Layout styles */
@@ -168,6 +173,39 @@
         font-size: 12px;
         margin-bottom: 5px;
       }
+
+      /* New UI element styles */
+      .packet-mode {
+        display: flex;
+        gap: 20px;
+        margin: 10px 0;
+      }
+
+      .packet-mode label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+      }
+
+      .network-controls {
+        display: flex;
+        gap: 10px;
+        margin: 15px 0;
+      }
+
+      /* Traffic visualization */
+      .traffic-low {
+        color: var(--success);
+      }
+      
+      .traffic-medium {
+        color: #FFA500; /* Orange */
+      }
+      
+      .traffic-high {
+        color: var(--danger);
+      }
     </style>
   </head>
   <body class="light-theme">
@@ -222,8 +260,17 @@
             <option value="node5">PC 5</option>
             <option value="node6">PC 6</option>
           </select>
+          <div class="packet-mode">
+            <label><input type="radio" name="packetMode" value="unicast" checked> Unicast</label>
+            <label><input type="radio" name="packetMode" value="broadcast"> Broadcast</label>
+          </div>
           <button id="sendPacket">Send Packet</button>
           <button id="autoSimulate">Auto Simulate</button>
+        </div>
+        
+        <div class="network-controls">
+          <button id="addNode">Add Node</button>
+          <button id="removeNode">Remove Node</button>
         </div>
         
         <div class="status" id="status">
@@ -265,53 +312,103 @@
       let autoSimulateInterval = null;
       let packetElements = [];
       let packetLogEntries = [];
+      let nodeCount = 6; // Track the current number of nodes
+      let trafficData = {}; // Track traffic on each connection
+      let lastBroadcastTime = 0; // Prevent broadcast spam
 
+      // Initialize theme based on user preference
+      document.addEventListener('DOMContentLoaded', function() {
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+          document.body.className = savedTheme;
+          updateThemeToggleText();
+        }
+      });
+      
       // Theme toggle
       document.getElementById("themeToggle").addEventListener("click", function() {
         const body = document.body;
         if (body.classList.contains("light-theme")) {
           body.classList.remove("light-theme");
           body.classList.add("dark-theme");
-          this.textContent = "☀️ Light Theme";
+          localStorage.setItem('theme', 'dark-theme');
         } else {
           body.classList.remove("dark-theme");
           body.classList.add("light-theme");
-          this.textContent = "🌙 Dracula Theme";
+          localStorage.setItem('theme', 'light-theme');
         }
+        updateThemeToggleText();
       });
+      
+      // Update theme toggle button text
+      function updateThemeToggleText() {
+        const button = document.getElementById("themeToggle");
+        if (document.body.classList.contains("dark-theme")) {
+          button.textContent = "☀️ Light Theme";
+        } else {
+          button.textContent = "🌙 Dracula Theme";
+        }
+      }
 
       function createNetwork() {
         const nodes = [
           {
             id: "hub",
-            label: "Switch",
-            title: `IP: ${ipConfigurations.hub}`, // Tooltip added here
+            label: "Hub",
             shape: "image",
             image: "switch-hub.png",
             size: 50,
-            font: { size: 16, color: "#000" },
+            font: { size: 16 },
             fixed: true,
             x: 0,
             y: 0,
-            shapeProperties: { borderDashes: false },
-            borderWidth: 4,
-            borderWidthSelected: 4,
-            color: { border: HUB_ACTIVE, background: "rgba(255,255,255,0.7)" },
+            borderWidth: 6,
+            borderWidthSelected: 6,
+            color: { border: HUB_ACTIVE, background: "rgba(255,255,255,0.9)" },
+            shadow: true,
+            shadowColor: "#1565C0", // blue for hub
+            shadowSize: 28,
+            shadowX: 0,
+            shadowY: 0,
           },
         ];
 
         const edges = [];
         const radius = 300;
 
-        for (let i = 1; i <= 6; i++) {
-          const angle = (i - 1) * ((2 * Math.PI) / 6);
+        for (let i = 1; i <= nodeCount; i++) {
+          const angle = (i - 1) * ((2 * Math.PI) / nodeCount);
           const x = radius * Math.cos(angle);
           const y = radius * Math.sin(angle);
           const nodeId = `node${i}`;
+          
+          // Initialize traffic data for this connection if it doesn't exist
+          if (!trafficData[nodeId]) {
+            trafficData[nodeId] = {
+              packetsSent: 0,
+              packetsReceived: 0,
+              lastUpdate: Date.now()
+            };
+          }
+          
+          // Initialize node status if it doesn't exist
+          if (nodeStatus[nodeId] === undefined) {
+            nodeStatus[nodeId] = true;
+          }
+          
+          // Get the IP (use existing or generate new)
+          const nodeIP = ipConfigurations[nodeId] || generateIP(i);
+          
+          // Make sure IP is in configurations
+          if (!ipConfigurations[nodeId]) {
+            ipConfigurations[nodeId] = nodeIP;
+          }
+          
           nodes.push({
             id: nodeId,
             label: `PC ${i}`,
-            title: `IP: ${ipConfigurations[nodeId]}`, // Tooltip added here
+            title: `IP: ${nodeIP}`,
             shape: "image",
             image: "desktop.png",
             size: 40,
@@ -319,10 +416,17 @@
             fixed: true,
             x,
             y,
-            shapeProperties: { borderDashes: false },
             borderWidth: 4,
             borderWidthSelected: 4,
-            color: { border: NODE_ACTIVE, background: "rgba(255,255,255,0.7)" },
+            color: { 
+              border: nodeStatus[nodeId] ? NODE_ACTIVE : NODE_INACTIVE, 
+              background: "rgba(255,255,255,0.7)" 
+            },
+            shadow: true,
+            shadowColor: nodeStatus[nodeId] ? "#4CAF50" : "#E53935", // green if active, red if inactive
+            shadowSize: 20,
+            shadowX: 0,
+            shadowY: 0,
           });
           edges.push({
             id: `edge${i}`,
@@ -331,7 +435,13 @@
             color: { color: "#000000" },
             width: 2,
           });
-          nodeStatus[nodeId] = true;
+        }
+
+        // If network already exists, destroy it first
+        if (network) {
+          network.destroy();
+          // Clean up any packet elements
+          cleanupPacketElements();
         }
 
         data = {
@@ -356,6 +466,53 @@
             toggleNode(params.nodes[0]);
           }
         });
+        
+        // Update node selectors in UI
+        updateNodeSelectors();
+      }
+
+      // Generate IP for newly added nodes
+      function generateIP(nodeIndex) {
+        return `192.168.1.${nodeIndex + 1}`;
+      }
+      
+      // Update node selectors in UI
+      function updateNodeSelectors() {
+        const sourceSelect = document.getElementById("sourceNode");
+        const targetSelect = document.getElementById("targetNode");
+        
+        // Save current selections
+        const sourceVal = sourceSelect.value;
+        const targetVal = targetSelect.value;
+        
+        // Clear options
+        sourceSelect.innerHTML = '<option value="">Select Source Node</option>';
+        targetSelect.innerHTML = '<option value="">Select Target Node</option>';
+        
+        // Add options for all current nodes
+        for (let i = 1; i <= nodeCount; i++) {
+          const nodeId = `node${i}`;
+          
+          // Add to source selector
+          const sourceOpt = document.createElement('option');
+          sourceOpt.value = nodeId;
+          sourceOpt.textContent = `PC ${i}`;
+          sourceSelect.appendChild(sourceOpt);
+          
+          // Add to target selector
+          const targetOpt = document.createElement('option');
+          targetOpt.value = nodeId;
+          targetOpt.textContent = `PC ${i}`;
+          targetSelect.appendChild(targetOpt);
+        }
+        
+        // Restore previous selections if they still exist
+        if (sourceVal && parseInt(sourceVal.replace('node', '')) <= nodeCount) {
+          sourceSelect.value = sourceVal;
+        }
+        if (targetVal && parseInt(targetVal.replace('node', '')) <= nodeCount) {
+          targetSelect.value = targetVal;
+        }
       }
 
       // Log packet activity
@@ -424,16 +581,20 @@
           hubNode.borderWidth = 4;
           hubNode.borderWidthSelected = 4;
           hubNode.color = { border: HUB_ACTIVE };
+          hubNode.shadowColor = HUB_ACTIVE;
         } else {
           hubNode.borderWidth = 4;
           hubNode.borderWidthSelected = 4;
           hubNode.color = { border: HUB_INACTIVE };
+          hubNode.shadowColor = HUB_INACTIVE;
         }
         data.nodes.update(hubNode);
 
         // Update each node's visual state
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= nodeCount; i++) {
           const nodeId = `node${i}`;
+          if (!data.nodes.get(nodeId)) continue; // Skip if node doesn't exist
+          
           const edgeId = `edge${i}`;
           const active = nodeStatus[nodeId] && hubActive;
 
@@ -444,17 +605,26 @@
           node.color = {
             border: nodeStatus[nodeId] ? NODE_ACTIVE : NODE_INACTIVE,
           };
+          node.shadowColor = nodeStatus[nodeId] ? NODE_ACTIVE : NODE_INACTIVE;
           data.nodes.update(node);
 
-          // Update edge appearance
+          // Update edge appearance and incorporate traffic data
+          const trafficLevel = getTrafficLevel(nodeId);
+          let edgeWidth = 2;
+          
+          // Adjust edge width based on traffic
+          if (trafficLevel === 'medium') edgeWidth = 3;
+          if (trafficLevel === 'high') edgeWidth = 4;
+          
           data.edges.update({
             id: edgeId,
             color: {
               color: active ? "#000000" : "#E53935",
               opacity: 1,
             },
-            width: 2,
+            width: edgeWidth,
             dashes: !active, // dashes for inactive connections
+            title: `Traffic: ${trafficData[nodeId].packetsSent + trafficData[nodeId].packetsReceived} packets`
           });
         }
 
@@ -467,6 +637,29 @@
         }
       }
 
+      // Get traffic level for a node connection
+      function getTrafficLevel(nodeId) {
+        if (!trafficData[nodeId]) return 'low';
+        
+        const totalPackets = trafficData[nodeId].packetsSent + trafficData[nodeId].packetsReceived;
+        const timeSinceStart = (Date.now() - trafficData[nodeId].lastUpdate) / 1000;
+        
+        // Reset traffic if it's been a while
+        if (timeSinceStart > 60) {
+          trafficData[nodeId].packetsSent = 0;
+          trafficData[nodeId].packetsReceived = 0;
+          trafficData[nodeId].lastUpdate = Date.now();
+          return 'low';
+        }
+        
+        // Calculate packets per second
+        const packetsPerSecond = totalPackets / Math.max(timeSinceStart, 1);
+        
+        if (packetsPerSecond > 0.5) return 'high';
+        if (packetsPerSecond > 0.2) return 'medium';
+        return 'low';
+      }
+
       function updateStatusText() {
         const statusEl = document.getElementById("status");
         if (!hubActive) {
@@ -475,8 +668,11 @@
           return;
         }
 
-        const activeCount = Object.values(nodeStatus).filter(Boolean).length;
-        if (activeCount === 6) {
+        const activeCount = Object.keys(nodeStatus)
+          .filter(id => parseInt(id.replace('node', '')) <= nodeCount) // Only consider existing nodes
+          .filter(id => nodeStatus[id]).length;
+        
+        if (activeCount === nodeCount) {
           statusEl.innerHTML =
             'All connections <span class="active-connection">ACTIVE</span>';
         } else if (activeCount === 0) {
@@ -484,7 +680,7 @@
             'All nodes <span class="inactive-connection">INACTIVE</span>';
         } else {
           statusEl.innerHTML = `<span class="active-connection">${activeCount}</span> active, <span class="inactive-connection">${
-            6 - activeCount
+            nodeCount - activeCount
           }</span> inactive`;
         }
       }
@@ -493,9 +689,13 @@
         let toggle = false;
         clearInterval(blinkInterval);
         blinkInterval = setInterval(() => {
-          for (let i = 1; i <= 6; i++) {
+          for (let i = 1; i <= nodeCount; i++) {
             const nodeId = `node${i}`;
             const edgeId = `edge${i}`;
+            
+            // Skip if node or edge doesn't exist
+            if (!data.nodes.get(nodeId) || !data.edges.get(edgeId)) continue;
+            
             const active = nodeStatus[nodeId] && hubActive;
 
             if (!active) {
@@ -512,11 +712,103 @@
         }, 500);
       }
 
+      // Animate packet along a path with requestAnimationFrame for smooth motion
+      function animatePacketAlongPath(x1, y1, x2, y2, centerX, centerY, onComplete) {
+        const networkDiv = document.getElementById('network');
+        if (!networkDiv) {
+          console.error("Network div not found");
+          if (onComplete) onComplete();
+          return;
+        }
+        
+        const packet = createPacketElement();
+        packetElements.push(packet);
+
+        // Use #network's center for calculations
+        const startX = (networkDiv.clientWidth / 2) + x1;
+        const startY = (networkDiv.clientHeight / 2) + y1;
+        const endX = (networkDiv.clientWidth / 2) + x2;
+        const endY = (networkDiv.clientHeight / 2) + y2;
+
+        // Duration in milliseconds
+        const duration = PACKET_SPEED;
+        const startTime = performance.now();
+        
+        // Setup for trailing effect
+        const trailInterval = 100; // ms between trail elements
+        let lastTrailTime = 0;
+        
+        // Animation function
+        function animate(currentTime) {
+          // Safety check if we exited the animation early
+          if (!packet.parentNode) {
+            if (onComplete) onComplete();
+            return;
+          }
+          
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Ease in-out function for smoother movement
+          const easedProgress = progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+          
+          // Calculate current position
+          const currentX = startX + (endX - startX) * easedProgress;
+          const currentY = startY + (endY - startY) * easedProgress;
+          
+          // Set packet position
+          packet.style.left = `${currentX}px`;
+          packet.style.top = `${currentY}px`;
+          
+          // Create trail effect
+          if (currentTime - lastTrailTime > trailInterval && progress > 0.1 && progress < 0.9) {
+            lastTrailTime = currentTime;
+            const trail = createTrailElement();
+            trail.style.left = `${currentX}px`;
+            trail.style.top = `${currentY}px`;
+            packetElements.push(trail);
+            
+            // Fade out and remove trail element
+            setTimeout(() => {
+              if (trail && trail.parentNode) {
+                trail.style.opacity = '0';
+                setTimeout(() => {
+                  if (trail && trail.parentNode) trail.parentNode.removeChild(trail);
+                  const index = packetElements.indexOf(trail);
+                  if (index !== -1) packetElements.splice(index, 1);
+                }, 300);
+              }
+            }, 200);
+          }
+          
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            // Animation complete
+            setTimeout(() => {
+              if (packet && packet.parentNode) packet.parentNode.removeChild(packet);
+              const index = packetElements.indexOf(packet);
+              if (index !== -1) packetElements.splice(index, 1);
+              
+              if (onComplete) onComplete();
+            }, 100);
+          }
+        }
+        
+        // Start animation
+        requestAnimationFrame(animate);
+      }
+      
       // Create visual packet
       function createPacketElement() {
         const packet = document.createElement('div');
         packet.className = 'packet';
-        document.querySelector('#network').appendChild(packet);
+        const networkDiv = document.querySelector('#network');
+        if (networkDiv) {
+          networkDiv.appendChild(packet);
+        }
         return packet;
       }
       
@@ -524,7 +816,10 @@
       function createTrailElement() {
         const trail = document.createElement('div');
         trail.className = 'packet-trail';
-        document.querySelector('#network').appendChild(trail);
+        const networkDiv = document.querySelector('#network');
+        if (networkDiv) {
+          networkDiv.appendChild(trail);
+        }
         return trail;
       }
       
@@ -540,8 +835,16 @@
       
       // Add pulse effect to a node
       function pulseEffect(nodeId) {
-        const nodePosition = network.getPositions([nodeId])[nodeId];
+        const positions = network.getPositions([nodeId]);
+        if (!positions || !positions[nodeId]) {
+          console.error("Node position not found:", nodeId);
+          return;
+        }
+        
+        const nodePosition = positions[nodeId];
         const networkDiv = document.getElementById('network');
+        if (!networkDiv) return;
+        
         const rect = networkDiv.getBoundingClientRect();
 
         // Calculate position relative to #network
@@ -560,13 +863,23 @@
 
         // Remove after animation completes
         setTimeout(() => {
-          if (pulse.parentNode) pulse.parentNode.removeChild(pulse);
+          if (pulse && pulse.parentNode) pulse.parentNode.removeChild(pulse);
           const index = packetElements.indexOf(pulse);
           if (index !== -1) packetElements.splice(index, 1);
         }, 500);
       }
 
       function sendPacket(source = null, target = null) {
+        // Check if in broadcast mode - only applies when user clicks the Send Packet button
+        // If sources and targets are provided directly, use unicast
+        const isBroadcast = document.querySelector('input[name="packetMode"]:checked')?.value === 'broadcast' && !target;
+        
+        // If in broadcast mode with no target specified, use broadcast function
+        if (isBroadcast) {
+          broadcastPacket(source);
+          return;
+        }
+        
         // Prevent multiple animations running at once
         if (isAnimatingPacket) {
           return;
@@ -627,7 +940,11 @@
           "PC "
         )} to ${target.replace("node", "PC ")}</span>`;
         
-        addLogEntry(`Sending packet from ${source.replace("node", "PC ")} (${ipConfigurations[source]}) to ${target.replace("node", "PC ")} (${ipConfigurations[target]})`, "source");
+        addLogEntry(`Sending packet from ${source.replace("node", "PC ")} (${ipConfigurations[source] || generateIP(parseInt(source.replace("node", "")))}) to ${target.replace("node", "PC ")} (${ipConfigurations[target] || generateIP(parseInt(target.replace("node", "")))})`, "source");
+
+        // Track traffic
+        trafficData[source].packetsSent++;
+        trafficData[target].packetsReceived++;
 
         isAnimatingPacket = true;
 
@@ -644,6 +961,170 @@
         setTimeout(() => {
           animatePacket(source, target);
         }, 300);
+      }
+
+      // New function to handle broadcast packet sending
+      function broadcastPacket(source = null) {
+        // Prevent spam
+        const now = Date.now();
+        if (now - lastBroadcastTime < 1000) {
+          return;
+        }
+        lastBroadcastTime = now;
+        
+        // Prevent multiple animations running at once
+        if (isAnimatingPacket) {
+          return;
+        }
+        
+        // If source isn't provided, get it from the select
+        if (!source) {
+          const sourceSelect = document.getElementById("sourceNode");
+          source = sourceSelect.value;
+        }
+        
+        const packetStatusEl = document.getElementById("packetStatus");
+        
+        if (!source) {
+          packetStatusEl.innerHTML = 
+            '<span class="inactive-connection">Please select a source node</span>';
+          addLogEntry("Broadcast failed: Source not selected", "error");
+          return;
+        }
+        
+        if (!hubActive) {
+          packetStatusEl.innerHTML =
+            '<span class="inactive-connection">Cannot broadcast: Hub is OFF</span>';
+          addLogEntry("Broadcast failed: Hub is OFF", "error");
+          return;
+        }
+        
+        if (!nodeStatus[source]) {
+          packetStatusEl.innerHTML = `<span class="inactive-connection">Cannot broadcast: Source ${source.replace(
+            "node", "PC "
+          )} is inactive</span>`;
+          addLogEntry(`Broadcast failed: Source ${source.replace("node", "PC ")} is inactive`, "error");
+          return;
+        }
+        
+        // Find all active targets (except source)
+        const targets = [];
+        for (let i = 1; i <= nodeCount; i++) {
+          const nodeId = `node${i}`;
+          if (nodeId !== source && nodeStatus[nodeId]) {
+            targets.push(nodeId);
+          }
+        }
+        
+        if (targets.length === 0) {
+          packetStatusEl.innerHTML = 
+            '<span class="inactive-connection">Cannot broadcast: No active target nodes</span>';
+          addLogEntry("Broadcast failed: No active target nodes", "error");
+          return;
+        }
+        
+        // Successfully broadcasting
+        packetStatusEl.innerHTML = `<span class="active-connection">Broadcasting packet from ${source.replace(
+          "node", "PC "
+        )} to ${targets.length} nodes</span>`;
+        
+        addLogEntry(`Broadcasting packet from ${source.replace("node", "PC ")} (${ipConfigurations[source] || generateIP(parseInt(source.replace("node", "")))}) to all active nodes`, "source");
+        
+        isAnimatingPacket = true;
+        
+        // Temporarily pause blinking during animation
+        clearInterval(blinkInterval);
+        
+        // Clean up any existing packet elements
+        cleanupPacketElements();
+        
+        // Add pulse effect to source node
+        pulseEffect(source);
+        
+        // Animate broadcast packets (source to hub first)
+        setTimeout(() => {
+          animateBroadcast(source, targets);
+        }, 300);
+      }
+      
+      function animateBroadcast(source, targets) {
+        // Get positions for source, hub, and all targets
+        const nodeIds = [source, "hub", ...targets];
+        const positions = network.getPositions(nodeIds);
+        
+        // Track traffic for broadcast
+        trafficData[source].packetsSent += targets.length;
+        targets.forEach(target => {
+          if (trafficData[target]) {
+            trafficData[target].packetsReceived++;
+          }
+        });
+        
+        // Canvas coordinates for center reference
+        const canvas = document.querySelector('#network canvas');
+        const rect = canvas.getBoundingClientRect();
+        const centerX = rect.left + (rect.width / 2);
+        const centerY = rect.top + (rect.height / 2);
+        
+        // First animate from source to hub
+        animatePacketAlongPath(
+          positions[source].x, positions[source].y,
+          positions["hub"].x, positions["hub"].y,
+          centerX, centerY,
+          () => {
+            // Add pulse effect to hub
+            pulseEffect("hub");
+            addLogEntry(`Packet arrived at hub, processing broadcast routing`, "info");
+            
+            // Create a sequence of animations (hub to each target)
+            let animationSequence = Promise.resolve();
+            
+            // Use a delay multiple
+            const delayMultiple = 200;
+            
+            // Then animate from hub to each target with staggered timing
+            targets.forEach((target, index) => {
+              // Check if target still exists
+              if (!positions[target]) return;
+              
+              animationSequence = animationSequence.then(() => {
+                return new Promise(resolve => {
+                  setTimeout(() => {
+                    addLogEntry(`Broadcasting to ${target.replace("node", "PC ")}`, "info");
+                    animatePacketAlongPath(
+                      positions["hub"].x, positions["hub"].y,
+                      positions[target].x, positions[target].y,
+                      centerX, centerY,
+                      () => {
+                        // Add pulse effect to target node
+                        pulseEffect(target);
+                        addLogEntry(`Packet delivered to ${target.replace("node", "PC ")} (${ipConfigurations[target] || generateIP(parseInt(target.replace("node", "")))})`, "target");
+                        resolve();
+                      }
+                    );
+                  }, index * delayMultiple);
+                });
+              });
+            });
+            
+            // When all animations complete
+            animationSequence.then(() => {
+              document.getElementById("packetStatus").innerHTML = 
+                `<span class="active-connection">Broadcast successfully delivered from ${source.replace(
+                  "node", "PC "
+                )} to ${targets.length} nodes</span>`;
+                
+              // Animation complete
+              isAnimatingPacket = false;
+              
+              // Restart blinking for inactive edges
+              blinkInactiveEdges();
+              
+              // Update visuals to reflect traffic changes
+              updateVisuals();
+            });
+          }
+        );
       }
 
       function animatePacket(source, target) {
@@ -687,13 +1168,16 @@
                       "node", "PC "
                     )} to ${target.replace("node", "PC ")}</span>`;
                   
-                  addLogEntry(`Packet successfully delivered to ${target.replace("node", "PC ")} (${ipConfigurations[target]})`, "target");
+                  addLogEntry(`Packet successfully delivered to ${target.replace("node", "PC ")} (${ipConfigurations[target] || generateIP(parseInt(target.replace("node", "")))})`, "target");
                   
                   // Animation complete
                   isAnimatingPacket = false;
                   
                   // Restart blinking for inactive edges
                   blinkInactiveEdges();
+                  
+                  // Update visuals to reflect traffic changes
+                  updateVisuals();
                 }
               );
             }, 300); // Wait a bit at the hub
@@ -701,81 +1185,64 @@
         );
       }
 
-      // Animate packet along a path with requestAnimationFrame for smooth motion
-      function animatePacketAlongPath(x1, y1, x2, y2, centerX, centerY, onComplete) {
-        const networkDiv = document.getElementById('network');
-        const packet = createPacketElement();
-        packetElements.push(packet);
-
-        // Use #network's center for calculations
-        const startX = (networkDiv.clientWidth / 2) + x1;
-        const startY = (networkDiv.clientHeight / 2) + y1;
-        const endX = (networkDiv.clientWidth / 2) + x2;
-        const endY = (networkDiv.clientHeight / 2) + y2;
-
-        // Duration in milliseconds
-        const duration = PACKET_SPEED;
-        const startTime = performance.now();
-        
-        // Setup for trailing effect
-        const trailInterval = 100; // ms between trail elements
-        let lastTrailTime = 0;
-        
-        // Animation function
-        function animate(currentTime) {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          
-          // Ease in-out function for smoother movement
-          const easedProgress = progress < 0.5
-            ? 2 * progress * progress
-            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-          
-          // Calculate current position
-          const currentX = startX + (endX - startX) * easedProgress;
-          const currentY = startY + (endY - startY) * easedProgress;
-          
-          // Set packet position
-          packet.style.left = `${currentX}px`;
-          packet.style.top = `${currentY}px`;
-          
-          // Create trail effect
-          if (currentTime - lastTrailTime > trailInterval && progress > 0.1 && progress < 0.9) {
-            lastTrailTime = currentTime;
-            const trail = createTrailElement();
-            trail.style.left = `${currentX}px`;
-            trail.style.top = `${currentY}px`;
-            packetElements.push(trail);
-            
-            // Fade out and remove trail element
-            setTimeout(() => {
-              if (trail.parentNode) {
-                trail.style.opacity = '0';
-                setTimeout(() => {
-                  if (trail.parentNode) trail.parentNode.removeChild(trail);
-                  const index = packetElements.indexOf(trail);
-                  if (index !== -1) packetElements.splice(index, 1);
-                }, 300);
-              }
-            }, 200);
-          }
-          
-          if (progress < 1) {
-            requestAnimationFrame(animate);
-          } else {
-            // Animation complete
-            setTimeout(() => {
-              if (packet.parentNode) packet.parentNode.removeChild(packet);
-              const index = packetElements.indexOf(packet);
-              if (index !== -1) packetElements.splice(index, 1);
-              
-              if (onComplete) onComplete();
-            }, 100);
-          }
+      // Add a new node to the network
+      function addNode() {
+        // Stop any ongoing animations
+        if (isAnimatingPacket) {
+          cleanupPacketElements();
+          isAnimatingPacket = false;
         }
         
-        // Start animation
-        requestAnimationFrame(animate);
+        nodeCount++;
+        const newNodeId = `node${nodeCount}`;
+        
+        // Initialize node status and traffic data
+        nodeStatus[newNodeId] = true;
+        trafficData[newNodeId] = {
+          packetsSent: 0,
+          packetsReceived: 0,
+          lastUpdate: Date.now()
+        };
+        
+        // Add new IP to configurations if needed
+        if (!ipConfigurations[newNodeId]) {
+          ipConfigurations[newNodeId] = generateIP(nodeCount);
+        }
+        
+        // Rebuild the network with the new node count
+        createNetwork();
+        addLogEntry(`Added new node: PC ${nodeCount} (${ipConfigurations[newNodeId]})`, "info");
+        
+        // Update visuals
+        updateVisuals();
+      }
+      
+      // Remove the last node from the network
+      function removeNode() {
+        if (nodeCount <= 2) {
+          addLogEntry("Cannot remove node: Minimum 2 nodes required", "error");
+          return;
+        }
+        
+        // Stop any ongoing animations
+        if (isAnimatingPacket) {
+          cleanupPacketElements();
+          isAnimatingPacket = false;
+        }
+        
+        const removedNodeId = `node${nodeCount}`;
+        addLogEntry(`Removed node: PC ${nodeCount} (${ipConfigurations[removedNodeId] || generateIP(nodeCount)})`, "info");
+        
+        // Clean up node status and traffic data
+        delete nodeStatus[removedNodeId];
+        delete trafficData[removedNodeId];
+        
+        // Decrement node count and rebuild network
+        nodeCount--;
+        createNetwork();
+        
+        // Update visuals
+        updateVisuals();
       }
 
       // New function for auto simulation
@@ -795,27 +1262,42 @@
         button.textContent = "Stop Auto Simulate";
         addLogEntry("Auto simulation started", "info");
         
-        autoSimulateInterval = setInterval(() => {
-          if (isAnimatingPacket) return; // Don't start new animation if one is in progress
-          
-          // Get all active nodes
-          const activeNodes = [];
-          for (let i = 1; i <= 6; i++) {
-            const nodeId = `node${i}`;
-            if (nodeStatus[nodeId] && hubActive) {
-              activeNodes.push(nodeId);
-            }
+        // Run the first simulation immediately
+        runOneSimulation();
+        
+        autoSimulateInterval = setInterval(runOneSimulation, PACKET_SPEED * 3);
+      }
+      
+      // Helper function to run a single simulation step
+      function runOneSimulation() {
+        if (isAnimatingPacket) return; // Don't start new animation if one is in progress
+        
+        // Get all active nodes
+        const activeNodes = [];
+        for (let i = 1; i <= nodeCount; i++) {
+          const nodeId = `node${i}`;
+          if (nodeStatus[nodeId] && hubActive) {
+            activeNodes.push(nodeId);
           }
-          
-          // If less than 2 active nodes, can't simulate
-          if (activeNodes.length < 2) {
-            document.getElementById("packetStatus").innerHTML = 
-              '<span class="inactive-connection">Need at least 2 active nodes for auto simulation</span>';
-            addLogEntry("Auto simulation: Need at least 2 active nodes", "error");
-            return;
-          }
-          
-          // Pick random source and target (but make sure they're different)
+        }
+        
+        // If less than 2 active nodes, can't simulate
+        if (activeNodes.length < 2) {
+          document.getElementById("packetStatus").innerHTML = 
+            '<span class="inactive-connection">Need at least 2 active nodes for auto simulation</span>';
+          addLogEntry("Auto simulation: Need at least 2 active nodes", "error");
+          return;
+        }
+        
+        // Randomly choose between unicast and broadcast (30% chance of broadcast)
+        const shouldBroadcast = Math.random() < 0.3;
+        
+        if (shouldBroadcast) {
+          // For broadcast, just pick a random source
+          const source = activeNodes[Math.floor(Math.random() * activeNodes.length)];
+          broadcastPacket(source);
+        } else {
+          // For unicast, pick random source and target
           let source, target;
           do {
             source = activeNodes[Math.floor(Math.random() * activeNodes.length)];
@@ -824,7 +1306,7 @@
           
           // Send packet between these random nodes
           sendPacket(source, target);
-        }, PACKET_SPEED * 3); // Wait for animation to complete before starting next one
+        }
       }
 
       // Attach events
@@ -845,6 +1327,14 @@
       document
         .getElementById("autoSimulate")
         .addEventListener("click", autoSimulate);
+        
+      document
+        .getElementById("addNode")
+        .addEventListener("click", addNode);
+        
+      document
+        .getElementById("removeNode")
+        .addEventListener("click", removeNode);
 
       // Initialize
       createNetwork();
