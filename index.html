@@ -211,6 +211,36 @@
   <body class="light-theme">
     <button id="themeToggle">🌙 Dracula Theme</button>
     
+    <!-- User Guide Section -->
+    <div id="userGuide" class="user-guide">
+      <h2>Star Topology Simulator - User Guide</h2>
+      <button id="closeGuide" class="close-guide">×</button>
+      <div class="guide-content">
+        <h3>Overview</h3>
+        <p>This simulator demonstrates a star network topology where all nodes connect to a central hub. Data transmission between nodes must pass through the hub.</p>
+        
+        <h3>Main Features</h3>
+        <ul>
+          <li><strong>Node Management:</strong> Add/remove nodes or toggle their active state by clicking on them</li>
+          <li><strong>Hub Control:</strong> Toggle the hub state to simulate central point failure</li>
+          <li><strong>Packet Transmission:</strong> Send unicast (node to node) or broadcast (node to all) packets</li>
+          <li><strong>Network Configuration:</strong> Adjust latency, packet size, and enable/disable collision detection</li>
+          <li><strong>Load Testing:</strong> Test network performance under different loads</li>
+        </ul>
+        
+        <h3>Quick Start</h3>
+        <ol>
+          <li>Select a source node from the dropdown</li>
+          <li>Select a target node or choose broadcast mode</li>
+          <li>Click "Send Packet" to transmit data</li>
+          <li>View detailed packet logging in the right sidebar</li>
+        </ol>
+        
+        <button id="startDemo" class="demo-button">Run Demo Sequence</button>
+      </div>
+    </div>
+    <button id="showGuide" class="show-guide">Show User Guide</button>
+    
     <div class="main-layout">
       <div class="main-content">
         <h1>Star Topology Simulator</h1>
@@ -231,84 +261,109 @@
         </div>
         
         <div id="network"></div>
-        
-        <!-- Packet Queue Visualization -->
-        <div class="queue-container">
-          <h3>Hub Packet Queue</h3>
-          <div id="packetQueue" class="packet-queue"></div>
-        </div>
       </div>
       
       <div class="sidebar">
         <h2>Controls</h2>
         
-        <div class="controls">
-          <button id="toggleHub">Toggle Hub (ON)</button>
-          <button id="resetAll">Reset All</button>
+        <!-- Packet Log moved to top for better visibility -->
+        <div class="packet-log">
+          <h2>Packet Log</h2>
+          <div class="log-container" id="packetLog"></div>
         </div>
         
-        <div class="packet-controls">
-          <select id="sourceNode">
-            <option value="">Select Source Node</option>
-            <option value="node1">PC 1</option>
-            <option value="node2">PC 2</option>
-            <option value="node3">PC 3</option>
-            <option value="node4">PC 4</option>
-            <option value="node5">PC 5</option>
-            <option value="node6">PC 6</option>
-          </select>
-          <select id="targetNode">
-            <option value="">Select Target Node</option>
-            <option value="node1">PC 1</option>
-            <option value="node2">PC 2</option>
-            <option value="node3">PC 3</option>
-            <option value="node4">PC 4</option>
-            <option value="node5">PC 5</option>
-            <option value="node6">PC 6</option>
-          </select>
-          <div class="packet-mode">
-            <label><input type="radio" name="packetMode" value="unicast" checked> Unicast</label>
-            <label><input type="radio" name="packetMode" value="broadcast"> Broadcast</label>
-          </div>
-          <button id="sendPacket">Send Packet</button>
-          <button id="autoSimulate">Auto Simulate</button>
+        <div class="status" id="status">
+          All connections <span class="active-connection">ACTIVE</span>
         </div>
         
-        <div class="network-controls">
-          <button id="addNode">Add Node</button>
-          <button id="removeNode">Remove Node</button>
-        </div>
+        <div class="status" id="packetStatus"></div>
         
-        <!-- Network Configuration -->
-        <div class="config-panel">
-          <h3>Network Configuration</h3>
-          
-          <!-- Latency Simulation -->
-          <div class="config-item">
-            <label for="latencySlider">Latency (ms): <span id="latencyValue">0</span></label>
-            <input type="range" id="latencySlider" min="0" max="1000" step="50" value="0">
+        <!-- Essential Controls Section -->
+        <div class="collapsible-section">
+          <div class="section-header expanded">
+            <h3>Essential Controls</h3>
+            <span class="toggle-icon">▼</span>
           </div>
-          
-          <!-- Packet Size -->
-          <div class="config-item">
-            <label for="packetSizeSlider">Packet Size (bytes): <span id="packetSizeValue">64</span></label>
-            <input type="range" id="packetSizeSlider" min="32" max="1500" step="32" value="64">
-          </div>
-          
-          <!-- Load Testing -->
-          <div class="config-item">
-            <label for="loadTestPackets">Test Packets: <span id="loadTestPacketsValue">10</span></label>
-            <input type="range" id="loadTestPackets" min="5" max="50" step="5" value="10">
-            <button id="runLoadTest">Run Load Test</button>
-          </div>
-          
-          <!-- Collision Detection Toggle -->
-          <div class="config-item">
-            <label><input type="checkbox" id="enableCollisions" checked> Enable Collision Detection</label>
+          <div class="section-content">
+            <div class="controls">
+              <button id="toggleHub">Toggle Hub (ON)</button>
+              <button id="resetAll">Reset All</button>
+            </div>
+            
+            <div class="packet-controls">
+              <select id="sourceNode">
+                <option value="">Select Source Node</option>
+                <option value="node1">PC 1</option>
+                <option value="node2">PC 2</option>
+                <option value="node3">PC 3</option>
+                <option value="node4">PC 4</option>
+                <option value="node5">PC 5</option>
+                <option value="node6">PC 6</option>
+              </select>
+              <select id="targetNode">
+                <option value="">Select Target Node</option>
+                <option value="node1">PC 1</option>
+                <option value="node2">PC 2</option>
+                <option value="node3">PC 3</option>
+                <option value="node4">PC 4</option>
+                <option value="node5">PC 5</option>
+                <option value="node6">PC 6</option>
+              </select>
+              <div class="packet-mode">
+                <label><input type="radio" name="packetMode" value="unicast" checked> Unicast</label>
+                <label><input type="radio" name="packetMode" value="broadcast"> Broadcast</label>
+              </div>
+              <button id="sendPacket">Send Packet</button>
+            </div>
           </div>
         </div>
         
-        <!-- Load Test Results -->
+        <!-- Advanced Controls Section (Collapsed by default) -->
+        <div class="collapsible-section">
+          <div class="section-header">
+            <h3>Advanced Controls</h3>
+            <span class="toggle-icon">▶</span>
+          </div>
+          <div class="section-content" style="display: none;">
+            <button id="autoSimulate">Auto Simulate</button>
+            
+            <div class="network-controls">
+              <button id="addNode">Add Node</button>
+              <button id="removeNode">Remove Node</button>
+            </div>
+            
+            <!-- Network Configuration -->
+            <div class="config-panel">
+              <h3>Network Configuration</h3>
+              
+              <!-- Latency Simulation -->
+              <div class="config-item">
+                <label for="latencySlider">Latency (ms): <span id="latencyValue">0</span></label>
+                <input type="range" id="latencySlider" min="0" max="1000" step="50" value="0">
+              </div>
+              
+              <!-- Packet Size -->
+              <div class="config-item">
+                <label for="packetSizeSlider">Packet Size (bytes): <span id="packetSizeValue">64</span></label>
+                <input type="range" id="packetSizeSlider" min="32" max="1500" step="32" value="64">
+              </div>
+              
+              <!-- Load Testing -->
+              <div class="config-item">
+                <label for="loadTestPackets">Test Packets: <span id="loadTestPacketsValue">10</span></label>
+                <input type="range" id="loadTestPackets" min="5" max="50" step="5" value="10">
+                <button id="runLoadTest">Run Load Test</button>
+              </div>
+              
+              <!-- Collision Detection Toggle -->
+              <div class="config-item">
+                <label><input type="checkbox" id="enableCollisions" checked> Enable Collision Detection</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Load Test Results Section -->
         <div id="loadTestResults" class="load-test-results" style="display: none;">
           <h4>Load Test Results</h4>
           <div class="metric">
@@ -327,17 +382,6 @@
             <span>Avg. Delivery Time:</span>
             <span id="metricTime" class="metric-value">0 ms</span>
           </div>
-        </div>
-        
-        <div class="status" id="status">
-          All connections <span class="active-connection">ACTIVE</span>
-        </div>
-        
-        <div class="status" id="packetStatus"></div>
-        
-        <div class="packet-log">
-          <h2>Packet Log</h2>
-          <div class="log-container" id="packetLog"></div>
         </div>
       </div>
     </div>
@@ -404,7 +448,49 @@
         updateVisuals();
         blinkInactiveEdges();
         addLogEntry("Star Topology Simulator initialized", "info");
+        
+        // User guide controls
+        document.getElementById("showGuide").addEventListener("click", function() {
+          document.getElementById("userGuide").style.display = "block";
+        });
+        
+        document.getElementById("closeGuide").addEventListener("click", function() {
+          document.getElementById("userGuide").style.display = "none";
+        });
+        
+        document.getElementById("startDemo").addEventListener("click", runDemoSequence);
+        
+        // Initialize collapsible sections
+        initCollapsibleSections();
       });
+      
+      // Function to initialize collapsible sections
+      function initCollapsibleSections() {
+        const sectionHeaders = document.querySelectorAll('.section-header');
+        
+        sectionHeaders.forEach(header => {
+          header.addEventListener('click', function() {
+            // Toggle expanded class
+            this.classList.toggle('expanded');
+            
+            // Update the toggle icon
+            const icon = this.querySelector('.toggle-icon');
+            if (this.classList.contains('expanded')) {
+              icon.textContent = '▼';
+            } else {
+              icon.textContent = '▶';
+            }
+            
+            // Toggle visibility of content section
+            const content = this.nextElementSibling;
+            if (content.style.display === 'none' || !content.style.display) {
+              content.style.display = 'block';
+            } else {
+              content.style.display = 'none';
+            }
+          });
+        });
+      }
       
       // Theme toggle
       document.getElementById("themeToggle").addEventListener("click", function() {
@@ -431,6 +517,10 @@
         }
       }
 
+      /**
+       * Creates the star network topology with a central hub and peripheral nodes
+       * The hub is placed at the center, with nodes distributed evenly in a circle around it
+       */
       function createNetwork() {
         const nodes = [
           {
@@ -1080,30 +1170,9 @@
       
       // Update queue visualization
       function updateQueueVisualization() {
-        const queueElement = document.getElementById('packetQueue');
-        queueElement.innerHTML = '';
-        
-        if (packetQueue.length === 0) {
-          return;
-        }
-        
-        // Add visual elements for each queued packet
-        packetQueue.forEach((packet, index) => {
-          const packetElement = document.createElement('div');
-          
-          // Determine size class based on packet size
-          let sizeClass = 'queue-packet-medium';
-          if (packet.size <= 64) sizeClass = 'queue-packet-small';
-          if (packet.size >= 512) sizeClass = 'queue-packet-large';
-          
-          packetElement.className = `queue-packet ${sizeClass}`;
-          packetElement.title = `From ${packet.source.replace('node', 'PC ')} to ${packet.target.replace('node', 'PC ')} (${packet.size} bytes)`;
-          
-          // Always show packet index for better visibility
-          packetElement.textContent = index + 1;
-          
-          queueElement.appendChild(packetElement);
-        });
+        // No-op function since the queue visualization has been removed 
+        // but we keep it for backward compatibility with existing code
+        return;
       }
       
       // Update load test metrics display
@@ -1530,151 +1599,134 @@
         return trail;
       }
 
-      // Use sendPacketWithData instead of the old sendPacket for manual packet sending
-      function sendPacket(source = null, target = null) {
-        // Check if in broadcast mode - only applies when user clicks the Send Packet button
-        // If sources and targets are provided directly, use unicast
-        const isBroadcast = document.querySelector('input[name="packetMode"]:checked')?.value === 'broadcast' && !target;
+      /**
+       * Initiates packet sending based on user selection
+       * Handles both unicast and broadcast modes
+       */
+      function sendPacket() {
+        const source = document.getElementById("sourceNode").value;
+        const target = document.getElementById("targetNode").value;
+        const packetMode = document.querySelector('input[name="packetMode"]:checked').value;
         
-        // If in broadcast mode with no target specified, use broadcast function
-        if (isBroadcast) {
-          broadcastPacket(source);
-          return;
-        }
-        
-        // Prevent multiple animations running at once
         if (isAnimatingPacket) {
+          addLogEntry("Cannot send packet while another packet is being animated", "error");
           return;
         }
 
-        // If source and target aren't provided, get them from the selects
-        if (!source || !target) {
-          const sourceSelect = document.getElementById("sourceNode");
-          const targetSelect = document.getElementById("targetNode");
-          source = sourceSelect.value;
-          target = targetSelect.value;
+        if (!source) {
+          addLogEntry("Please select a source node", "error");
+          return;
+        }
+
+        if (packetMode === "unicast" && !target) {
+          addLogEntry("Please select a target node for unicast transmission", "error");
+          return;
+        }
+
+        if (source === target && packetMode === "unicast") {
+          addLogEntry("Source and target nodes cannot be the same", "error");
+          return;
+        }
+
+        if (packetMode === "unicast") {
+          // Use retry logic for unicast transmissions
+          sendPacketWithRetry(source, target);
+        } else if (packetMode === "broadcast") {
+          // Prevent broadcast spam
+          const now = Date.now();
+          if (now - lastBroadcastTime < 3000) {
+            addLogEntry("Please wait before sending another broadcast", "error");
+            return;
+          }
+          lastBroadcastTime = now;
+          
+          broadcastPacket(source);
+        }
+      }
+      
+      /**
+       * Implements packet transmission retry logic
+       * In case of delivery failure, attempts to retransmit the packet
+       * @param {string} source - Source node ID
+       * @param {string} target - Target node ID
+       * @param {number} attempts - Number of retry attempts left
+       */
+      function sendPacketWithRetry(source, target, attempts = 3) {
+        // Check if transmission is possible
+        if (!canTransmit(source, target)) {
+          if (attempts > 0) {
+            addLogEntry(`Transmission failed, retrying... (${attempts} attempts left)`, "error");
+            
+            // Wait and retry with reduced attempts count
+            setTimeout(() => {
+              sendPacketWithRetry(source, target, attempts - 1);
+            }, 1000);
+          } else {
+            addLogEntry("Packet delivery failed after multiple attempts", "error");
+            document.getElementById("packetStatus").innerHTML = 
+              '<span class="inactive-connection">DELIVERY FAILED</span>';
+          }
+          return;
         }
         
-        const packetStatusEl = document.getElementById("packetStatus");
-
-        if (!source || !target) {
-          packetStatusEl.innerHTML =
-            '<span class="inactive-connection">Please select both source and target nodes</span>';
-          addLogEntry("Packet transmission failed: Source or target not selected", "error");
-          return;
-        }
-
-        if (source === target) {
-          packetStatusEl.innerHTML =
-            '<span class="inactive-connection">Source and target cannot be the same</span>';
-          addLogEntry("Packet transmission failed: Source and target are the same", "error");
-          return;
-        }
-
+        // If transmission is possible, send the packet
+        sendPacketBetweenNodes(source, target);
+      }
+      
+      /**
+       * Checks if packet transmission is possible between nodes
+       * In a star topology, both nodes and the hub must be active
+       * @param {string} source - Source node ID
+       * @param {string} target - Target node ID
+       * @returns {boolean} - Whether transmission is possible
+       */
+      function canTransmit(source, target) {
+        // Verify hub is active (central to star topology)
         if (!hubActive) {
-          packetStatusEl.innerHTML =
-            '<span class="inactive-connection">Cannot send packet: Hub is OFF</span>';
-          addLogEntry("Packet transmission failed: Hub is OFF", "error");
-          return;
+          addLogEntry("Cannot transmit: Hub is inactive", "error");
+          return false;
         }
-
+        
+        // Verify source node is active
         if (!nodeStatus[source]) {
-          packetStatusEl.innerHTML = `<span class="inactive-connection">Cannot send packet: Source ${source.replace(
-            "node",
-            "PC "
-          )} is inactive</span>`;
-          addLogEntry(`Packet transmission failed: Source ${source.replace("node", "PC ")} is inactive`, "error");
-          return;
+          addLogEntry(`Cannot transmit: Source ${source.replace("node", "PC ")} is inactive`, "error");
+          return false;
         }
-
+        
+        // Verify target node is active
         if (!nodeStatus[target]) {
-          packetStatusEl.innerHTML = `<span class="inactive-connection">Cannot send packet: Target ${target.replace(
-            "node",
-            "PC "
-          )} is inactive</span>`;
-          addLogEntry(`Packet transmission failed: Target ${target.replace("node", "PC ")} is inactive`, "error");
-          return;
+          addLogEntry(`Cannot transmit: Target ${target.replace("node", "PC ")} is inactive`, "error");
+          return false;
         }
+        
+        return true;
+      }
 
+      /**
+       * Simulates packet transmission between nodes in a star topology
+       * All communication must go through the central hub
+       * @param {string} source - Source node ID
+       * @param {string} target - Target node ID
+       * @param {number} packetSize - Size of the packet in bytes 
+       */
+      function sendPacketBetweenNodes(source, target, packetSize = currentPacketSize) {
+        const packetStatusEl = document.getElementById("packetStatus");
+        
         // Create packet data
         const packetData = {
           id: 'packet-' + Date.now(),
           source: source,
           target: target,
-          size: currentPacketSize,
+          size: packetSize,
           creationTime: Date.now()
         };
         
-        // Send with new function
-        sendPacketWithData(packetData);
-      }
-
-      // New function to handle broadcast packet sending
-      function broadcastPacket(source = null) {
-        // Prevent spam
-        const now = Date.now();
-        if (now - lastBroadcastTime < 1000) {
-          return;
-        }
-        lastBroadcastTime = now;
+        addLogEntry(`Sending packet from ${source.replace("node", "PC ")} to ${target.replace("node", "PC ")}`, "source");
+        packetStatusEl.innerHTML = `<span class="active-connection">Sending packet from ${source.replace("node", "PC ")} to ${target.replace("node", "PC ")}</span>`;
         
-        // Prevent multiple animations running at once
-        if (isAnimatingPacket) {
-          return;
-        }
-        
-        // If source isn't provided, get it from the select
-        if (!source) {
-          const sourceSelect = document.getElementById("sourceNode");
-          source = sourceSelect.value;
-        }
-        
-        const packetStatusEl = document.getElementById("packetStatus");
-        
-        if (!source) {
-          packetStatusEl.innerHTML = 
-            '<span class="inactive-connection">Please select a source node</span>';
-          addLogEntry("Broadcast failed: Source not selected", "error");
-          return;
-        }
-        
-        if (!hubActive) {
-          packetStatusEl.innerHTML =
-            '<span class="inactive-connection">Cannot broadcast: Hub is OFF</span>';
-          addLogEntry("Broadcast failed: Hub is OFF", "error");
-          return;
-        }
-        
-        if (!nodeStatus[source]) {
-          packetStatusEl.innerHTML = `<span class="inactive-connection">Cannot broadcast: Source ${source.replace(
-            "node", "PC "
-          )} is inactive</span>`;
-          addLogEntry(`Broadcast failed: Source ${source.replace("node", "PC ")} is inactive`, "error");
-          return;
-        }
-        
-        // Find all active targets (except source)
-        const targets = [];
-        for (let i = 1; i <= nodeCount; i++) {
-          const nodeId = `node${i}`;
-          if (nodeId !== source && nodeStatus[nodeId]) {
-            targets.push(nodeId);
-          }
-        }
-        
-        if (targets.length === 0) {
-          packetStatusEl.innerHTML = 
-            '<span class="inactive-connection">Cannot broadcast: No active target nodes</span>';
-          addLogEntry("Broadcast failed: No active target nodes", "error");
-          return;
-        }
-        
-        // Successfully broadcasting
-        packetStatusEl.innerHTML = `<span class="active-connection">Broadcasting ${currentPacketSize}B packet from ${source.replace(
-          "node", "PC "
-        )} to ${targets.length} nodes</span>`;
-        
-        addLogEntry(`Broadcasting ${currentPacketSize}B packet from ${source.replace("node", "PC ")} to all active nodes`, "source");
+        // Track traffic
+        trafficData[source].packetsSent++;
+        trafficData[target].packetsReceived++;
         
         isAnimatingPacket = true;
         
@@ -1687,25 +1739,86 @@
         // Add pulse effect to source node
         pulseEffect(source);
         
-        // Create packet data for broadcast
-        const basePacketId = 'broadcast-' + Date.now();
-        const creationTime = Date.now();
-        
-        // Register source to hub packet
+        // Register this packet as active
+        const packetId = packetData.id;
+        const creationTime = packetData.creationTime;
         activePackets.push({
-          id: basePacketId + '-source',
+          id: packetId,
           source: source,
-          target: 'hub',
+          target: target,
           creationTime: creationTime,
-          size: currentPacketSize,
-          path: [source, 'hub'],
-          currentSegment: 0
+          size: packetSize,
+          path: [source, 'hub', target],
+          currentSegment: 0 // Starting with source → hub
         });
         
-        // Animate broadcast packets (source to hub first)
+        // Animate the packet with size and latency considerations
         setTimeout(() => {
-          animateBroadcastWithParams(source, targets, basePacketId, currentPacketSize);
+          animatePacketWithParams(source, target, packetId, packetSize);
         }, 300);
+      }
+
+      // New function to handle broadcast packet sending
+      function broadcastPacket(source = null) {
+        // If source isn't provided, get it from the select
+        if (!source) {
+          const sourceSelect = document.getElementById("sourceNode");
+          source = sourceSelect.value;
+        }
+        
+        if (!source) {
+          addLogEntry("Please select a source node for broadcast", "error");
+          return;
+        }
+        
+        if (isAnimatingPacket) {
+          addLogEntry("Cannot broadcast while another packet is being animated", "error");
+          return;
+        }
+        
+        if (!hubActive) {
+          addLogEntry("Cannot broadcast: Hub is inactive", "error");
+          return;
+        }
+        
+        if (!nodeStatus[source]) {
+          addLogEntry(`Cannot broadcast: Source ${source.replace("node", "PC ")} is inactive`, "error");
+          return;
+        }
+        
+        // Create list of valid target nodes (active and not the source)
+        const targets = [];
+        for (let i = 1; i <= nodeCount; i++) {
+          const nodeId = `node${i}`;
+          // Skip the source node and inactive nodes
+          if (nodeId !== source && nodeStatus[nodeId]) {
+            targets.push(nodeId);
+          }
+        }
+        
+        if (targets.length === 0) {
+          addLogEntry("No active target nodes available for broadcast", "error");
+          return;
+        }
+        
+        // Show broadcast message
+        const packetStatusEl = document.getElementById("packetStatus");
+        packetStatusEl.innerHTML = `<span class="active-connection">Broadcasting from ${source.replace("node", "PC ")} to all nodes</span>`;
+        addLogEntry(`Broadcasting from ${source.replace("node", "PC ")} to all nodes`, "source");
+        
+        // Create a unique ID for this broadcast
+        const broadcastId = 'broadcast-' + Date.now();
+        
+        isAnimatingPacket = true;
+        
+        // Temporarily pause blinking during animation
+        clearInterval(blinkInterval);
+        
+        // Clean up any existing packet elements
+        cleanupPacketElements();
+        
+        // Animate the broadcast
+        animateBroadcastWithParams(source, targets, broadcastId, currentPacketSize);
       }
       
       function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
@@ -1987,6 +2100,78 @@
       updateVisuals();
       blinkInactiveEdges();
       addLogEntry("Star Topology Simulator initialized", "info");
+
+      /**
+       * Demo sequence to showcase main features of the star topology simulator
+       * Demonstrates node communication, failure handling, and broadcast capabilities
+       */
+      function runDemoSequence() {
+        addLogEntry("Starting demonstration sequence...", "info");
+        
+        // Step 1: Basic packet transmission
+        setTimeout(() => {
+          document.getElementById("sourceNode").value = "node1";
+          document.getElementById("targetNode").value = "node3";
+          addLogEntry("Demo: Sending a packet from PC 1 to PC 3", "info");
+          sendPacket();
+        }, 1000);
+        
+        // Step 2: Show node failure scenario
+        setTimeout(() => {
+          addLogEntry("Demo: Simulating a node failure (PC 4)", "info");
+          toggleNode("node4");
+        }, 4000);
+        
+        // Step 3: Attempt transmission to failed node
+        setTimeout(() => {
+          document.getElementById("sourceNode").value = "node2";
+          document.getElementById("targetNode").value = "node4";
+          addLogEntry("Demo: Attempting to send to an inactive node", "info");
+          sendPacket();
+        }, 6000);
+        
+        // Step 4: Broadcast transmission
+        setTimeout(() => {
+          document.getElementById("sourceNode").value = "node5";
+          document.querySelector('input[name="packetMode"][value="broadcast"]').checked = true;
+          addLogEntry("Demo: Demonstrating broadcast capability from PC 5", "info");
+          sendPacket();
+        }, 9000);
+        
+        // Step 5: Hub failure scenario
+        setTimeout(() => {
+          addLogEntry("Demo: Simulating hub failure (central point of failure in star topology)", "info");
+          toggleHub();
+        }, 14000);
+        
+        // Step 6: Attempt transmission with failed hub
+        setTimeout(() => {
+          document.getElementById("sourceNode").value = "node1";
+          document.getElementById("targetNode").value = "node2";
+          document.querySelector('input[name="packetMode"][value="unicast"]').checked = true;
+          addLogEntry("Demo: Attempting transmission with inactive hub", "info");
+          sendPacket();
+        }, 16000);
+        
+        // Step 7: Restore network
+        setTimeout(() => {
+          addLogEntry("Demo: Restoring network to normal operation", "info");
+          resetAll();
+        }, 19000);
+        
+        // Step 8: Run a quick load test
+        setTimeout(() => {
+          addLogEntry("Demo: Running network load test", "info");
+          document.getElementById('loadTestPackets').value = 10;
+          document.getElementById('loadTestPacketsValue').textContent = 10;
+          runLoadTest();
+        }, 21000);
+        
+        // Finish demo
+        setTimeout(() => {
+          addLogEntry("Demo sequence completed. Explore the simulator on your own!", "info");
+        }, 25000);
+      }
     </script>
   </body>
 </html>
