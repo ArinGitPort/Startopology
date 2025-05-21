@@ -43,7 +43,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById("closeGuide").addEventListener("click", () => {
     document.getElementById("userGuide").style.display = "none";
   });
-  document.getElementById("startDemo").addEventListener("click", runDemoSequence);
+  document.getElementById("startDemo").addEventListener("click", () => {
+    document.getElementById("userGuide").style.display = "none"; // Close the guide
+    runDemoSequence();
+  });
 
   // Network Control Listeners
   document.getElementById("toggleHub").addEventListener("click", () => {
@@ -56,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   document.getElementById("addNode").addEventListener("click", addNode);
   document.getElementById("removeNode").addEventListener("click", removeNode);
+  document.getElementById("simulateCollisionBtn").addEventListener("click", simulateCollisionOnClick);
 
   // Packet Control Listeners
   document.getElementById("sendPacket").addEventListener("click", () => {

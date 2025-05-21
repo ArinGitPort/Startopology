@@ -508,37 +508,117 @@ function checkCollisions(packetId, position) {
   
   for (const otherPacket of activePackets) {
     if (otherPacket.id === packetId) continue;
-    if (!otherPacket.currentPosition || !otherPacket.path || !currentPacket.path) continue;
-    if (otherPacket.currentSegment === undefined || currentPacket.currentSegment === undefined) continue;
-    if (otherPacket.currentSegment >= otherPacket.path.length || currentPacket.currentSegment >= currentPacket.path.length) continue;
+    if (!otherPacket.currentPosition || !otherPacket.path || !currentPacket.path || 
+        currentPacket.currentSegment === undefined || otherPacket.currentSegment === undefined ||
+        currentPacket.currentSegment >= currentPacket.path.length -1 || 
+        otherPacket.currentSegment >= otherPacket.path.length - 1) {
+            continue;
+        }
 
-    // Simple distance check
     const dx = position.x - otherPacket.currentPosition.x;
     const dy = position.y - otherPacket.currentPosition.y;
     const distance = Math.sqrt(dx*dx + dy*dy);
     
-    // Collision if close and on the same path segment (e.g. both going to/from hub, or same target)
-    // A more refined check might be needed for hub: if one is source->hub and other is hub->target, it's not a collision *at the hub* unless simultaneous arrival on same port (not simulated)
-    // For simplicity, consider collision if on the same logical segment. The hub is a single point of contention.
-    let onSameSegment = false;
-    if (currentPacket.path[currentPacket.currentSegment] === 'hub' && otherPacket.path[otherPacket.currentSegment] === 'hub') {
-        // Both packets are either heading to the hub or leaving the hub.
-        // If one is source->hub and other is also source->hub (different sources), it's a collision at hub input.
-        // If one is hub->target and other is also hub->target (different targets), it's a collision at hub output (less likely physically if switched, but for simulation).
-        // If one is source->hub and other is hub->target, they are on different 'sides' of the hub logic, less of a direct collision unless very bad timing.
-        onSameSegment = true; // Simplified: any activity involving the hub segment is contention
-    } else if (currentPacket.path[currentPacket.currentSegment] === otherPacket.path[otherPacket.currentSegment]){
-        // This covers node-to-hub or hub-to-node where target/source nodes are the same (unlikely for different packets unless it's a loopback test).
-        onSameSegment = true;
+    let onPotentiallyCollidingSegment = false;
+
+    // Determine the origin and destination for the current leg of each packet
+    const currentSegmentOrigin = currentPacket.path[currentPacket.currentSegment];
+    const currentSegmentDestination = currentPacket.path[currentPacket.currentSegment + 1];
+    
+    const otherSegmentOrigin = otherPacket.path[otherPacket.currentSegment];
+    const otherSegmentDestination = otherPacket.path[otherPacket.currentSegment + 1];
+
+    // Case 1: Both packets are heading TO the hub (from different or same source nodes)
+    if (currentSegmentDestination === 'hub' && otherSegmentDestination === 'hub') {
+      onPotentiallyCollidingSegment = true;
+    }
+    // Case 2: Both packets are originating FROM the hub AND heading to the SAME target node
+    else if (currentSegmentOrigin === 'hub' && otherSegmentOrigin === 'hub' && currentSegmentDestination === otherSegmentDestination) {
+      onPotentiallyCollidingSegment = true;
+    }
+    // Case 3: Generic case - if they share the exact same origin and destination for their current segment
+    else if (currentSegmentOrigin === otherSegmentOrigin && currentSegmentDestination === otherSegmentDestination) {
+        onPotentiallyCollidingSegment = true;
     }
 
-    if (distance < 20 && onSameSegment) { // Threshold for collision
+    if (distance < 20 && onPotentiallyCollidingSegment) { // Threshold for collision
       createCollisionEffect(position.x, position.y);
       loadTestMetrics.collisions++;
-      collisionCount++; // This might be redundant with loadTestMetrics.collisions
+      collisionCount++; 
       updateLoadTestMetrics();
-      addLogEntry(`Collision detected involving packet ${packetId.substring(0,10)} and ${otherPacket.id.substring(0,10)}`, "error");
-      return true;
+      addLogEntry(`Collision detected involving packets from ${currentPacket.source.replace("node", "PC ")} and ${otherPacket.source.replace("node", "PC ")}`, "error");
+      
+      // Store packet details for retransmission
+      const packetsToRetry = [];
+      
+      // Capture current packet for retransmission
+      if(currentPacket && currentPacket.source && currentPacket.target){
+        packetsToRetry.push({
+          source: currentPacket.source,
+          target: currentPacket.target,
+          size: currentPacket.size || currentPacketSize
+        });
+        
+        const currentPIndex = activePackets.findIndex(p => p.id === currentPacket.id);
+        if(currentPIndex !== -1) activePackets.splice(currentPIndex, 1);
+      }
+      
+      // Capture other packet for retransmission
+      if(otherPacket && otherPacket.source && otherPacket.target){
+        packetsToRetry.push({
+          source: otherPacket.source,
+          target: otherPacket.target,
+          size: otherPacket.size || currentPacketSize
+        });
+        
+        const otherPIndex = activePackets.findIndex(p => p.id === otherPacket.id);
+        if(otherPIndex !== -1) activePackets.splice(otherPIndex, 1);
+      }
+      
+      // Schedule retransmission after exponential backoff
+      addLogEntry("Collision resolution: Packets will be retransmitted after a random backoff time.", "info");
+      
+      // For each packet that collided, schedule retransmission with random backoff
+      packetsToRetry.forEach((packet, index) => {
+        // Exponential backoff algorithm: Wait between 0.5 to 2.5 seconds, with some randomness
+        // Each subsequent retry should have a progressively longer average backoff
+        const baseBackoff = 500; // Base backoff in milliseconds
+        const randomMultiplier = 1 + Math.random() * 4; // Random multiplier between 1-5
+        const backoffTime = baseBackoff * randomMultiplier;
+        
+        setTimeout(() => {
+          // Only retransmit if the nodes and hub are still active
+          if (hubActive && nodeStatus[packet.source] && nodeStatus[packet.target]) {
+            addLogEntry(`Automatically retransmitting packet from ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")} after ${Math.round(backoffTime)}ms backoff`, "info");
+            
+            // Create a new packet with the same source/target but different ID
+            const newPacketData = {
+              id: 'retry-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+              source: packet.source,
+              target: packet.target,
+              size: packet.size,
+              creationTime: Date.now(),
+              retryCount: (packet.retryCount || 0) + 1
+            };
+            
+            // Add to queue or send directly based on current system state
+            if (isAnimatingPacket) {
+              packetQueue.push(newPacketData);
+              updateQueueVisualization();
+              addLogEntry(`Queued retransmission for ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")}`, "info");
+            } else {
+              sendPacketWithData(newPacketData);
+            }
+          } else {
+            addLogEntry(`Canceled retransmission for ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")}: nodes or hub inactive`, "error");
+          }
+        }, backoffTime + (index * 200)); // Stagger retransmissions slightly
+      });
+      
+      isAnimatingPacket = activePackets.length > 0;
+      if (packetQueue.length > 0 && !isAnimatingPacket) setTimeout(processPacketQueue, 100);
+
+      return true; // Collision detected
     }
   }
   return false;
@@ -645,4 +725,99 @@ function sendPacketWithData(packetData) {
   setTimeout(() => {
     animatePacketWithParams(source, target, currentActivePacketId, packetSize);
   }, 300);
+}
+
+/**
+ * Simulates a collision scenario by sending two packets to the same destination concurrently.
+ */
+function simulateCollisionOnClick() {
+  if (isAnimatingPacket) {
+    addLogEntry("Cannot simulate collision: Animation in progress.", "error");
+    return;
+  }
+  if (!enableCollisions) {
+    addLogEntry("Collision simulation requires 'Enable Collision Detection' to be checked.", "warning");
+    // Proceed anyway, but it won't visually collide as expected
+  }
+
+  const activeNodes = [];
+  for (let i = 1; i <= nodeCount; i++) {
+    const nodeId = `node${i}`;
+    if (nodeStatus[nodeId] && hubActive && data.nodes.get(nodeId)) {
+      activeNodes.push(nodeId);
+    }
+  }
+
+  if (activeNodes.length < 2) {
+    addLogEntry("Simulate Collision: Requires at least 2 active nodes.", "error");
+    return;
+  }
+
+  addLogEntry("Attempting to simulate a collision...", "info");
+
+  // Scenario 1: Two nodes send to a third distinct node (if available)
+  if (activeNodes.length >= 3) {
+    let source1 = activeNodes[0];
+    let source2 = activeNodes[1];
+    let targetNode = activeNodes[2];
+
+    addLogEntry(`Simulating collision: ${source1} -> ${targetNode} and ${source2} -> ${targetNode}`, "info");
+    // Send first packet (will be queued if using sendPacketWithData and queue processing)
+    // For a more direct collision, we might need to bypass or manage the queue carefully for this simulation
+    // For now, let's use the existing send mechanism. Collisions depend on timing.
+    sendPacketWithData({
+      id: 'collision-sim-1-' + Date.now(),
+      source: source1,
+      target: targetNode,
+      size: currentPacketSize,
+      creationTime: Date.now()
+    });
+
+    // Send second packet shortly after
+    setTimeout(() => {
+       if (isAnimatingPacket && activePackets.length > 0) { // Check if the first packet is still animating
+         sendPacketWithData({
+            id: 'collision-sim-2-' + Date.now(),
+            source: source2,
+            target: targetNode,
+            size: currentPacketSize,
+            creationTime: Date.now()
+          });
+       } else {
+         addLogEntry("Collision simulation second packet not sent: first packet finished too quickly or was blocked.", "warning");
+       }
+    }, 50); // Send the second packet very quickly after the first
+
+  } 
+  // Scenario 2: Two nodes send to the hub (effectively, this is like sending to different targets but contention occurs at hub)
+  // This is more naturally handled by just sending two packets from different sources to different targets.
+  // For a direct visual collision on the path to the hub, they'd need to be on the same path segment.
+  // The current collision logic should pick this up if they are close on the path to the hub.
+  else { // activeNodes.length === 2
+    let source1 = activeNodes[0];
+    let source2 = activeNodes[1];
+    // No third node, so they can't send to the *same* distinct target. 
+    // We can have them send to each other, which means both send to hub first.
+    addLogEntry(`Simulating collision: ${source1} -> ${source2} and ${source2} -> ${source1}`, "info");
+    sendPacketWithData({
+      id: 'collision-sim-1-' + Date.now(),
+      source: source1,
+      target: source2, // Will go via hub
+      size: currentPacketSize,
+      creationTime: Date.now()
+    });
+    setTimeout(() => {
+      if (isAnimatingPacket && activePackets.length > 0) {
+        sendPacketWithData({
+          id: 'collision-sim-2-' + Date.now(),
+          source: source2,
+          target: source1, // Will go via hub
+          size: currentPacketSize,
+          creationTime: Date.now()
+        });
+      } else {
+         addLogEntry("Collision simulation second packet not sent: first packet finished too quickly or was blocked.", "warning");
+      }
+    }, 50);
+  }
 } 

@@ -163,7 +163,7 @@
       }
 
       .log-container {
-        max-height: 300px;
+        max-height: 450px;
         overflow-y: auto;
         border-radius: 4px;
       }
@@ -226,6 +226,7 @@
           <li><strong>Packet Transmission:</strong> Send unicast (node to node) or broadcast (node to all) packets</li>
           <li><strong>Network Configuration:</strong> Adjust latency, packet size, and enable/disable collision detection</li>
           <li><strong>Load Testing:</strong> Test network performance under different loads</li>
+          <li><strong>Collision Resolution:</strong> When collisions occur, packets are automatically retransmitted after a random backoff period, simulating real network behavior</li>
         </ul>
         
         <h3>Quick Start</h3>
@@ -330,6 +331,7 @@
             <div class="network-controls">
               <button id="addNode">Add Node</button>
               <button id="removeNode">Remove Node</button>
+              <button id="simulateCollisionBtn">Simulate Collision</button>
             </div>
             
             <!-- Network Configuration -->
