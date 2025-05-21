@@ -10,18 +10,18 @@ function toggleNode(nodeId) {
 }
 
 /**
- * Toggles the active/inactive state of the hub.
+ * Toggles the active/inactive state of the switch.
  */
 function toggleHub() {
   hubActive = !hubActive;
-  document.getElementById("toggleHub").textContent = `Toggle Hub (${hubActive ? "ON" : "OFF"})`;
+  document.getElementById("toggleHub").textContent = `Toggle Switch (${hubActive ? "ON" : "OFF"})`;
   const status = hubActive ? "active" : "inactive";
-  addLogEntry(`Hub is now <span class="${status}-connection">${status.toUpperCase()}</span>`, hubActive ? "info" : "error");
+  addLogEntry(`Switch is now <span class="${status}-connection">${status.toUpperCase()}</span>`, hubActive ? "info" : "error");
   updateVisuals();
 }
 
 /**
- * Resets all nodes and the hub to their active state.
+ * Resets all nodes and the switch to their active state.
  */
 function resetAll() {
   hubActive = true;
@@ -30,8 +30,8 @@ function resetAll() {
         nodeStatus[id] = true;
     }
   }
-  document.getElementById("toggleHub").textContent = `Toggle Hub (ON)`;
-  addLogEntry("All nodes and hub have been reset to <span class=\"active-connection\">ACTIVE</span>", "info");
+  document.getElementById("toggleHub").textContent = `Toggle Switch (ON)`;
+  addLogEntry("All nodes and switch have been reset to <span class=\"active-connection\">ACTIVE</span>", "info");
   updateVisuals();
 }
 
@@ -100,14 +100,14 @@ function removeNode() {
 
 /**
  * Checks if packet transmission is possible between nodes.
- * In a star topology, both nodes and the hub must be active.
+ * In a star topology, both nodes and the switch must be active.
  * @param {string} source - Source node ID
  * @param {string} target - Target node ID
  * @returns {boolean} - Whether transmission is possible
  */
 function canTransmit(source, target) {
   if (!hubActive) {
-    addLogEntry("Cannot transmit: Hub is inactive", "error");
+    addLogEntry("Cannot transmit: Switch is inactive", "error");
     return false;
   }
   

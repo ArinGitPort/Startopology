@@ -209,7 +209,7 @@
     </style>
   </head>
   <body class="light-theme">
-    <button id="themeToggle">🌙 Dracula Theme</button>
+    <button id="themeToggle">🌙 Dark Mode</button>
     
     <!-- User Guide Section -->
     <div id="userGuide" class="user-guide">
@@ -217,12 +217,12 @@
       <button id="closeGuide" class="close-guide">×</button>
       <div class="guide-content">
         <h3>Overview</h3>
-        <p>This simulator demonstrates a star network topology where all nodes connect to a central hub. Data transmission between nodes must pass through the hub.</p>
+        <p>This simulator demonstrates a star network topology where all nodes connect to a central switch. Data transmission between nodes must pass through the switch.</p>
         
         <h3>Main Features</h3>
         <ul>
           <li><strong>Node Management:</strong> Add/remove nodes or toggle their active state by clicking on them</li>
-          <li><strong>Hub Control:</strong> Toggle the hub state to simulate central point failure</li>
+          <li><strong>Switch Control:</strong> Toggle the switch state to simulate central point failure</li>
           <li><strong>Packet Transmission:</strong> Send unicast (node to node) or broadcast (node to all) packets</li>
           <li><strong>Network Configuration:</strong> Adjust latency, packet size, and enable/disable collision detection</li>
           <li><strong>Load Testing:</strong> Test network performance under different loads</li>
@@ -247,12 +247,7 @@
         <h1>Star Topology Simulator</h1>
         
         <div class="legend">
-          <div class="legend-item">
-            <span class="legend-color" style="background: #1565c0"></span>Hub
-          </div>
-          <div class="legend-item">
-            <span class="legend-color" style="background: #4caf50"></span>Active Node
-          </div>
+    
           <div class="legend-item">
             <span class="legend-color" style="background: #e53935"></span>Inactive Node
           </div>
@@ -287,7 +282,7 @@
           </div>
           <div class="section-content">
             <div class="controls">
-              <button id="toggleHub">Toggle Hub (ON)</button>
+              <button id="toggleHub">Toggle Switch (ON)</button>
               <button id="resetAll">Reset All</button>
             </div>
             

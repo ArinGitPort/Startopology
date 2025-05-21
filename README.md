@@ -5,9 +5,9 @@ A comprehensive web-based simulator that demonstrates the principles of star net
 ## Features
 
 ### Core Network Functionality
-- **Star Topology Implementation**: Accurately models a star network with a central hub and peripheral nodes
+- **Star Topology Implementation**: Accurately models a star network with a central switch and peripheral nodes
 - **Packet Transmission**: Simulates both unicast (node-to-node) and broadcast (node-to-all) communication
-- **Link Failures**: Test network resilience by toggling nodes and hub activation
+- **Link Failures**: Test network resilience by toggling nodes and switch activation
 - **Packet Animation**: Visualize data movement through the network with animated packets
 - **Retry Logic**: Implements packet retry mechanism for failed transmissions
 
@@ -16,7 +16,7 @@ A comprehensive web-based simulator that demonstrates the principles of star net
 - **Latency Simulation**: Configurable network latency to simulate real-world conditions
 - **Variable Packet Sizes**: Adjust packet sizes to test network performance
 - **Traffic Monitoring**: Tracks and visualizes network traffic on each connection
-- **Packet Queue**: Visualizes packet queuing at the hub level
+- **Packet Queue**: Visualizes packet queuing at the switch level
 - **IP Addressing**: Realistic IP address configuration for all network devices
 
 ### User Interface
@@ -52,7 +52,7 @@ A comprehensive web-based simulator that demonstrates the principles of star net
 
 ### Basic Operations
 - Click on nodes to toggle their active state
-- Use the "Toggle Hub" button to simulate hub failure
+- Use the "Toggle Switch" button to simulate switch failure
 - Select source and target nodes from the dropdown menus
 - Choose between unicast or broadcast modes
 - Click "Send Packet" to transmit data
@@ -67,7 +67,7 @@ A comprehensive web-based simulator that demonstrates the principles of star net
 ## Educational Value
 
 This simulator helps demonstrate key networking concepts including:
-- The role of a central hub in star topology
+- The role of a central switch in star topology
 - How network failures affect connectivity
 - Packet routing principles in star networks
 - The impact of latency on network performance

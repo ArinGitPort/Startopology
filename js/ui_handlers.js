@@ -81,7 +81,7 @@ function addLogEntry(message, type = "info") {
 function updateStatusText() {
   const statusEl = document.getElementById("status");
   if (!hubActive) {
-    statusEl.innerHTML = 'Hub is <span class="inactive-connection">OFF</span> - All connections inactive';
+    statusEl.innerHTML = 'Switch is <span class="inactive-connection">OFF</span> - All connections inactive';
     return;
   }
 
@@ -292,7 +292,7 @@ function runDemoSequence() {
     },
     // Hub failure and send attempt - More robust
     () => {
-      addLogEntry("Demo: Simulating hub failure.", "info");
+      addLogEntry("Demo: Simulating switch failure.", "info");
       
       // Direct toggle call
       if (hubActive) {
@@ -301,7 +301,7 @@ function runDemoSequence() {
           updateVisuals();
         }, 300);
       } else {
-        addLogEntry("Demo: Hub already inactive, toggling back on first.", "info");
+        addLogEntry("Demo: Switch already inactive, toggling back on first.", "info");
         toggleHub(); // Turn it on
         setTimeout(() => {
           toggleHub(); // Then off again
@@ -311,7 +311,7 @@ function runDemoSequence() {
     },
     // More robust approach to sending with inactive hub
     () => {
-      addLogEntry("Demo: Attempting transmission with inactive hub.", "info");
+      addLogEntry("Demo: Attempting transmission with inactive switch.", "info");
       // Update UI to reflect what we're demonstrating
       if (document.getElementById("sourceNode") && document.getElementById("targetNode")) {
         document.getElementById("sourceNode").value = "node1";
@@ -326,14 +326,14 @@ function runDemoSequence() {
     },
     // Restore hub and demonstrate latency/packet size
     () => {
-      addLogEntry("Demo: Restoring hub.", "info");
+      addLogEntry("Demo: Restoring switch.", "info");
       if (!hubActive) {
         toggleHub(); // Turn hub back on if it's off
         setTimeout(() => {
           updateVisuals();
         }, 300);
       } else {
-        addLogEntry("Demo: Hub is already active.", "info");
+        addLogEntry("Demo: Switch is already active.", "info");
       }
     },
     // More reliable latency and packet size change

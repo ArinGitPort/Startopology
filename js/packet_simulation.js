@@ -205,7 +205,7 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
 function animatePacketWithParams(source, target, packetId, packetSize) {
   const positions = network.getPositions([source, "hub", target]);
   if (!positions[source] || !positions["hub"] || !positions[target]) {
-    addLogEntry(`Animation failed: Node position not found for ${source}, hub, or ${target}`, "error");
+    addLogEntry(`Animation failed: Node position not found for ${source}, switch, or ${target}`, "error");
     isAnimatingPacket = false;
     const packetIndex = activePackets.findIndex(p => p.id === packetId);
     if (packetIndex !== -1) activePackets.splice(packetIndex, 1);
@@ -230,17 +230,17 @@ function animatePacketWithParams(source, target, packetId, packetSize) {
   const sizeSpeedFactor = 1 + ((packetSize - 64) / 1436); // Larger packets are slower
   const adjustedSpeed = PACKET_SPEED * sizeSpeedFactor;
   
-  addLogEntry(`Packet traveling from ${source.replace("node", "PC ")} to hub`, "info");
+  addLogEntry(`Packet traveling from ${source.replace("node", "PC ")} to switch`, "info");
   const packetIndex = activePackets.findIndex(p => p.id === packetId);
-  if (packetIndex !== -1) activePackets[packetIndex].currentSegment = 0; // source -> hub
+  if (packetIndex !== -1) activePackets[packetIndex].currentSegment = 0; // source -> switch
 
   animatePacketAlongPathWithLatency(sourcePos.x, sourcePos.y, hubPos.x, hubPos.y, centerX, centerY, packetId, packetSize, adjustedSpeed, () => {
-    if (packetIndex !== -1) activePackets[packetIndex].currentSegment = 1; // hub -> target
+    if (packetIndex !== -1) activePackets[packetIndex].currentSegment = 1; // switch -> target
     pulseEffect("hub");
-    addLogEntry(`Packet arrived at hub, processing routing (latency: ${currentLatency}ms)`, "info");
+    addLogEntry(`Packet arrived at switch, processing routing (latency: ${currentLatency}ms)`, "info");
     
     setTimeout(() => {
-      addLogEntry(`Packet traveling from hub to ${target.replace("node", "PC ")}`, "info");
+      addLogEntry(`Packet traveling from switch to ${target.replace("node", "PC ")}`, "info");
       animatePacketAlongPathWithLatency(hubPos.x, hubPos.y, targetPos.x, targetPos.y, centerX, centerY, packetId, packetSize, adjustedSpeed, () => {
         pulseEffect(target);
         document.getElementById("packetStatus").innerHTML = 
@@ -346,7 +346,7 @@ function broadcastPacket(source) {
     return;
   }
   if (!hubActive) {
-    addLogEntry("Cannot broadcast: Hub is inactive", "error");
+    addLogEntry("Cannot broadcast: Switch is inactive", "error");
     return;
   }
   if (!nodeStatus[source]) {
@@ -424,7 +424,7 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
   const adjustedSpeed = PACKET_SPEED * sizeSpeedFactor;
 
   pulseEffect(source); // Pulse source at the beginning of broadcast
-  addLogEntry(`Broadcast: ${source.replace("node", "PC ")} to Hub`, "info");
+  addLogEntry(`Broadcast: ${source.replace("node", "PC ")} to Switch`, "info");
 
   // Register source-to-hub packet for collision detection and tracking
   const sourceToHubPacketId = basePacketId + '-source-hub';
@@ -443,7 +443,7 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
     if (sourceToHubIndex !== -1) activePackets.splice(sourceToHubIndex, 1); // Remove after segment completion
 
     pulseEffect("hub");
-    addLogEntry(`Broadcast: Arrived at Hub (latency: ${currentLatency}ms), fanning out...`, "info");
+    addLogEntry(`Broadcast: Arrived at Switch (latency: ${currentLatency}ms), fanning out...`, "info");
     
     setTimeout(() => {
       let animationsCompleted = 0;
@@ -463,7 +463,7 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
 
         // Stagger animation start slightly for visual effect (optional)
         setTimeout(() => {
-            addLogEntry(`Broadcast: Hub to ${target.replace("node", "PC ")}`, "info");
+            addLogEntry(`Broadcast: Switch to ${target.replace("node", "PC ")}`, "info");
             animatePacketAlongPathWithLatency(positions["hub"].x, positions["hub"].y, positions[target].x, positions[target].y, centerX, centerY, hubToTargetPacketId, packetSize, adjustedSpeed, () => {
                 pulseEffect(target);
                 addLogEntry(`Broadcast: Delivered to ${target.replace("node", "PC ")} (${ipConfigurations[target] || generateIP(parseInt(target.replace("node", "")))})`, "target");

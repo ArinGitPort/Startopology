@@ -6,7 +6,7 @@ function createNetwork() {
   const nodes = [
     {
       id: "hub",
-      label: "Hub",
+      label: "Switch",
       shape: "image",
       image: "switch-hub.png",
       size: 50,
@@ -18,7 +18,7 @@ function createNetwork() {
       borderWidthSelected: 6,
       color: { border: HUB_ACTIVE, background: "rgba(255,255,255,0.9)" },
       shadow: true,
-      shadowColor: "#1565C0", // blue for hub
+      shadowColor: "#1565C0", // blue for switch
       shadowSize: 28,
       shadowX: 0,
       shadowY: 0,
