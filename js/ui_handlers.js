@@ -168,6 +168,34 @@ function updateQueueVisualization() {
     return;
 }
 
+// Global variable to track demo state
+let isDemoRunning = false;
+let demoTimeoutId = null;
+
+/**
+ * Stops the currently running demo sequence.
+ */
+function stopDemoSequence() {
+  isDemoRunning = false;
+  if (demoTimeoutId) {
+    clearTimeout(demoTimeoutId);
+    demoTimeoutId = null;
+  }
+  
+  // Reset button text and styling
+  const demoButton = document.getElementById("startDemo");
+  if (demoButton) {
+    demoButton.textContent = "Run Demo Sequence";
+    demoButton.classList.remove("stop-mode");
+    demoButton.onclick = () => {
+      document.getElementById("userGuide").style.display = "none";
+      runDemoSequence();
+    };
+  }
+  
+  addLogEntry("Demo sequence stopped by user.", "info");
+}
+
 /**
  * Runs a demonstration sequence showcasing the simulator's features.
  */
@@ -179,6 +207,16 @@ function runDemoSequence() {
     clearInterval(autoSimulateInterval);
     autoSimulateInterval = null;
     document.getElementById("autoSimulate").textContent = "Auto Simulate";
+  }
+  
+  // Set demo running state
+  isDemoRunning = true;
+    // Update button to stop demo
+  const demoButton = document.getElementById("startDemo");
+  if (demoButton) {
+    demoButton.textContent = "Stop Demo";
+    demoButton.classList.add("stop-mode");
+    demoButton.onclick = stopDemoSequence;
   }
   
   addLogEntry("Starting demonstration sequence... (User Guide will close)", "info");
@@ -511,12 +549,16 @@ function runDemoSequence() {
       addLogEntry("Demo sequence completed. Explore further!", "info");
     }
   ];
-
   function runNextAction() {
+    // Check if demo has been stopped
+    if (!isDemoRunning) {
+      return;
+    }
+    
     if (actionIndex < sequence.length) {
       // If an animation is in progress, wait until it completes
       if (isAnimatingPacket && actionIndex > 0 && actionIndex < sequence.length - 1) {
-        setTimeout(() => runNextAction(), 1000); // Check again in 1 second
+        demoTimeoutId = setTimeout(() => runNextAction(), 1000); // Check again in 1 second
         return;
       }
       
@@ -539,17 +581,30 @@ function runDemoSequence() {
           currentActionDelay = delay * 4; // Let auto-sim run even longer
         }
 
-        setTimeout(runNextAction, currentActionDelay);
+        demoTimeoutId = setTimeout(runNextAction, currentActionDelay);
       } catch (e) {
         console.error("Error in demo sequence:", e);
         addLogEntry("Demo sequence encountered an error. Continuing to next step.", "error");
         // Try to continue with next action
         actionIndex++;
-        setTimeout(runNextAction, delay);
+        demoTimeoutId = setTimeout(runNextAction, delay);
       }
-    } 
+    } else {      // Demo completed - reset state
+      isDemoRunning = false;
+      demoTimeoutId = null;
+      
+      // Reset button text and styling
+      const demoButton = document.getElementById("startDemo");
+      if (demoButton) {
+        demoButton.textContent = "Run Demo Sequence";
+        demoButton.classList.remove("stop-mode");
+        demoButton.onclick = () => {
+          document.getElementById("userGuide").style.display = "none";
+          runDemoSequence();
+        };
+      }
+    }
   }
-
   // Start the sequence after a brief initial delay
-  setTimeout(runNextAction, 1000);
+  demoTimeoutId = setTimeout(runNextAction, 1000);
 } 

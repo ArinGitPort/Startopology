@@ -483,6 +483,15 @@ body.dark-theme .packet-trail {
   box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
 }
 
+.demo-button.stop-mode {
+  background: var(--danger, #e74c3c);
+}
+
+.demo-button.stop-mode:hover {
+  background: var(--danger, #c0392b);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
 /* Dark theme adjustments for user guide */
 body.dark-theme .user-guide {
   border: 1px solid var(--border-dark, #6272a4);
