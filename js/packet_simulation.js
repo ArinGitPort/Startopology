@@ -72,9 +72,10 @@ function pulseEffect(nodeId) {
   const networkDiv = document.getElementById('network');
   if (!networkDiv) return;
   
-  const rect = networkDiv.getBoundingClientRect();
-  const centerX = rect.width / 2;
-  const centerY = rect.height / 2;
+  // Get the actual network div dimensions for proper positioning
+  const networkRect = networkDiv.getBoundingClientRect();
+  const centerX = networkRect.width / 2;
+  const centerY = networkRect.height / 2;
   const x = centerX + nodePosition.x;
   const y = centerY + nodePosition.y;
 
@@ -115,11 +116,16 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
   
   const packet = createPacketElement(packetSize);
   packetElements.push(packet);
-
-  const startX = (networkDiv.clientWidth / 2) + x1;
-  const startY = (networkDiv.clientHeight / 2) + y1;
-  const endX = (networkDiv.clientWidth / 2) + x2;
-  const endY = (networkDiv.clientHeight / 2) + y2;
+  // Get the actual network div position and dimensions
+  const networkRect = networkDiv.getBoundingClientRect();
+  const networkCenterX = networkRect.width / 2;
+  const networkCenterY = networkRect.height / 2;
+  
+  // For positioning within the network div (relative positioning)
+  const startX = networkCenterX + x1;
+  const startY = networkCenterY + y1;
+  const endX = networkCenterX + x2;
+  const endY = networkCenterY + y2;
   
   const startTime = performance.now();
   const trailInterval = Math.max(50, 120 - packetSize / 20); 
@@ -159,13 +165,14 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
         // onComplete is not called here as the packet did not reach its destination
         return; 
       }
-    }
-    
-    if (currentTime - lastTrailTime > trailInterval && progress > 0.1 && progress < 0.9) {
+    }    if (currentTime - lastTrailTime > trailInterval && progress > 0.1 && progress < 0.9) {
       lastTrailTime = currentTime;
       const trail = createTrailElement(packetSize);
+      
+      // Position trail well below the packet path for better visibility
       trail.style.left = `${currentX}px`;
-      trail.style.top = `${currentY}px`;
+      trail.style.top = `${currentY + 35}px`;
+      
       packetElements.push(trail);
       
       setTimeout(() => {
@@ -216,14 +223,15 @@ function animatePacketWithParams(source, target, packetId, packetSize) {
   const hubPos = positions["hub"];
   const targetPos = positions[target];
   
-  const canvas = document.querySelector('#network canvas');
-  if (!canvas) {
-      addLogEntry("Animation failed: Canvas not found", "error");
+  // Use network div instead of canvas for positioning
+  const networkDiv = document.getElementById('network');
+  if (!networkDiv) {
+      addLogEntry("Animation failed: Network div not found", "error");
       isAnimatingPacket = false;
       // Similar cleanup as above
       return;
   }
-  const rect = canvas.getBoundingClientRect();
+  const rect = networkDiv.getBoundingClientRect();
   const centerX = rect.left + (rect.width / 2);
   const centerY = rect.top + (rect.height / 2);
   
@@ -411,13 +419,14 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
     trafficData[target].packetsReceived++;
   });
   
-  const canvas = document.querySelector('#network canvas');
-  if (!canvas) {
-    addLogEntry("Broadcast animation failed: Canvas not found", "error");
+  // Use network div instead of canvas for positioning
+  const networkDiv = document.getElementById('network');
+  if (!networkDiv) {
+    addLogEntry("Broadcast animation failed: Network div not found", "error");
     isAnimatingPacket = false;
     return;
   }
-  const rect = canvas.getBoundingClientRect();
+  const rect = networkDiv.getBoundingClientRect();
   const centerX = rect.left + (rect.width / 2);
   const centerY = rect.top + (rect.height / 2);
   const sizeSpeedFactor = 1 + ((packetSize - 64) / 1436);

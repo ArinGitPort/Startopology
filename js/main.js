@@ -3,6 +3,9 @@
  * This function is called when the DOM is fully loaded.
  */
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize floating particles background
+  initFloatingParticles();
+  
   // Initialize control event listeners
   initConfigControls(); 
   initCollapsibleSections();
@@ -86,4 +89,58 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   document.getElementById("autoSimulate").addEventListener("click", autoSimulate);
-}); 
+});
+
+/**
+ * Initialize floating particles background animation
+ */
+function initFloatingParticles() {
+  const particlesContainer = document.getElementById('particles');
+  const particleCount = 30; // Number of particles
+  
+  for (let i = 0; i < particleCount; i++) {
+    createParticle(particlesContainer, i);
+  }
+  
+  // Continuously spawn new particles
+  setInterval(() => {
+    if (particlesContainer.children.length < particleCount) {
+      createParticle(particlesContainer, Math.random());
+    }
+  }, 2000);
+}
+
+/**
+ * Create a single floating particle
+ */
+function createParticle(container, index) {
+  const particle = document.createElement('div');
+  particle.className = 'particle';
+  
+  // Random size between 2px and 8px
+  const size = Math.random() * 6 + 2;
+  particle.style.width = `${size}px`;
+  particle.style.height = `${size}px`;
+  
+  // Random horizontal position
+  particle.style.left = `${Math.random() * 100}%`;
+  
+  // Random animation delay
+  particle.style.animationDelay = `${Math.random() * 20}s`;
+  
+  // Occasionally make horizontal particles
+  if (Math.random() > 0.8) {
+    particle.classList.add('horizontal');
+    particle.style.top = `${Math.random() * 100}%`;
+    particle.style.left = '-100px';
+  }
+  
+  container.appendChild(particle);
+  
+  // Remove particle after animation completes
+  setTimeout(() => {
+    if (particle.parentNode) {
+      particle.parentNode.removeChild(particle);
+    }
+  }, 35000);
+}

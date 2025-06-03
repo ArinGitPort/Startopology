@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Star Topology Simulator</title>
+  <head>    <title>Startopology - Network Simulator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Modern star topology network simulator with real-time packet visualization">
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <style>
       /* Packet animation styles */
       .packet {
@@ -93,10 +97,11 @@
       }
     </style>
   </head>  <body>
-    
-    <!-- User Guide Section -->
+    <!-- Floating Particles Background -->
+    <div class="particles" id="particles"></div>
+      <!-- User Guide Section -->
     <div id="userGuide" class="user-guide">
-      <h2>Star Topology Simulator - User Guide</h2>
+      <h2>Startopology Network Simulator - User Guide</h2>
       <button id="closeGuide" class="close-guide">×</button>
       <div class="guide-content">
         <h3>Overview</h3>
@@ -117,159 +122,160 @@
           <li>Select a source node from the dropdown</li>
           <li>Select a target node or choose broadcast mode</li>
           <li>Click "Send Packet" to transmit data</li>
-          <li>View detailed packet logging in the right sidebar</li>
+          <li>View detailed packet logging in the left sidebar</li>
         </ol>
         
         <button id="startDemo" class="demo-button">Run Demo Sequence</button>
       </div>
     </div>
-    <button id="showGuide" class="show-guide">Show User Guide</button>
-    
-    <div class="main-layout">
-      <div class="main-content">
-        <h1>Star Topology Simulator</h1>
-        
-        <div class="legend">
-    
-          <div class="legend-item">
-            <span class="legend-color" style="background: #e53935"></span>Inactive Node
-          </div>
-          <div class="legend-item">
-            <span class="legend-color" style="background: #ffeb3b"></span>Data Packet
-          </div>
-        </div>
-        
-        <div id="network"></div>
-      </div>
-      
-      <div class="sidebar">
-        <h2>Controls</h2>
+    <button id="showGuide" class="show-guide">Show User Guide</button><div class="main-layout">        <!-- Left Sidebar - Packet Log Only -->
+        <div class="left-sidebar">
           <!-- Enhanced Packet Log with better visibility -->
-        <div class="packet-log">
-          <div class="packet-log-header">
-            <h2>Packet Log</h2>
-            <div class="log-controls">
-              <button id="clearLogBtn" class="clear-log-btn" title="Clear Log">🗑️</button>
-              <span id="logCount" class="log-count">0 entries</span>
-            </div>
-          </div>
-          <div class="log-container" id="packetLog"></div>
-        </div>
-        
-        <div class="status" id="status">
-          All connections <span class="active-connection">ACTIVE</span>
-        </div>
-        
-        <div class="status" id="packetStatus"></div>
-        
-        <!-- Essential Controls Section -->
-        <div class="collapsible-section">
-          <div class="section-header expanded">
-            <h3>Essential Controls</h3>
-            <span class="toggle-icon">▼</span>
-          </div>
-          <div class="section-content">
-            <div class="controls">
-              <button id="toggleHub">Toggle Switch (ON)</button>
-              <button id="resetAll">Reset All</button>
-            </div>
-            
-            <div class="packet-controls">
-              <select id="sourceNode">
-                <option value="">Select Source Node</option>
-                <option value="node1">PC 1</option>
-                <option value="node2">PC 2</option>
-                <option value="node3">PC 3</option>
-                <option value="node4">PC 4</option>
-                <option value="node5">PC 5</option>
-                <option value="node6">PC 6</option>
-              </select>
-              <select id="targetNode">
-                <option value="">Select Target Node</option>
-                <option value="node1">PC 1</option>
-                <option value="node2">PC 2</option>
-                <option value="node3">PC 3</option>
-                <option value="node4">PC 4</option>
-                <option value="node5">PC 5</option>
-                <option value="node6">PC 6</option>
-              </select>
-              <div class="packet-mode">
-                <label><input type="radio" name="packetMode" value="unicast" checked> Unicast</label>
-                <label><input type="radio" name="packetMode" value="broadcast"> Broadcast</label>
+          <div class="packet-log">
+            <div class="packet-log-header">
+              <h2>Packet Log</h2>
+              <div class="log-controls">
+                <button id="clearLogBtn" class="clear-log-btn" title="Clear Log">Clear</button>
+                <span id="logCount" class="log-count">0 entries</span>
               </div>
-              <button id="sendPacket">Send Packet</button>
+            </div>
+            <div class="log-container" id="packetLog"></div>
+          </div>
+        </div><!-- Center Content - Header, Legend, and Network -->
+        <div class="center-content">
+          <h1>Startopology Network Simulator</h1>
+          
+          <div class="legend">
+            <div class="legend-item">
+              <span class="legend-color" style="background: #ffffff;"></span>
+              <span>Active Node</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #ff4444;"></span>
+              <span>Inactive Node</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #00ff88;"></span>
+              <span>Data Packet</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background: #a0a0a0;"></span>
+              <span>Network Switch</span>
             </div>
           </div>
-        </div>
-        
-        <!-- Advanced Controls Section (Collapsed by default) -->
-        <div class="collapsible-section">
-          <div class="section-header">
-            <h3>Advanced Controls</h3>
-            <span class="toggle-icon">▶</span>
+          
+          <div id="network"></div>
+        </div>        <!-- Right Sidebar - Controls Only -->
+        <div class="right-sidebar">
+          <div class="status" id="status">
+            All connections <span class="active-connection">ACTIVE</span>
           </div>
-          <div class="section-content" style="display: none;">
-            <button id="autoSimulate">Auto Simulate</button>
-            
-            <div class="network-controls">
-              <button id="addNode">Add Node</button>
-              <button id="removeNode">Remove Node</button>
-              <button id="simulateCollisionBtn">Simulate Collision</button>
+          
+          <div class="status" id="packetStatus"></div>
+            <!-- Essential Controls Section -->
+          <div class="collapsible-section">
+            <div class="section-header expanded">
+              <h3>Essential Controls</h3>
+              <span class="toggle-icon">▼</span>
             </div>
-            
-            <!-- Network Configuration -->
-            <div class="config-panel">
-              <h3>Network Configuration</h3>
-              
-              <!-- Latency Simulation -->
-              <div class="config-item">
-                <label for="latencySlider">Latency (ms): <span id="latencyValue">0</span></label>
-                <input type="range" id="latencySlider" min="0" max="1000" step="50" value="0">
+            <div class="section-content">
+              <div class="controls">
+                <button id="toggleHub">Toggle Switch (ON)</button>
+                <button id="resetAll">Reset All</button>
               </div>
               
-              <!-- Packet Size -->
-              <div class="config-item">
-                <label for="packetSizeSlider">Packet Size (bytes): <span id="packetSizeValue">64</span></label>
-                <input type="range" id="packetSizeSlider" min="32" max="1500" step="32" value="64">
+              <div class="packet-controls">
+                <select id="sourceNode">
+                  <option value="">Select Source Node</option>
+                  <option value="node1">PC 1</option>
+                  <option value="node2">PC 2</option>
+                  <option value="node3">PC 3</option>
+                  <option value="node4">PC 4</option>
+                  <option value="node5">PC 5</option>
+                  <option value="node6">PC 6</option>
+                </select>
+                <select id="targetNode">
+                  <option value="">Select Target Node</option>
+                  <option value="node1">PC 1</option>
+                  <option value="node2">PC 2</option>
+                  <option value="node3">PC 3</option>
+                  <option value="node4">PC 4</option>
+                  <option value="node5">PC 5</option>
+                  <option value="node6">PC 6</option>
+                </select>
+                <div class="packet-mode">
+                  <label><input type="radio" name="packetMode" value="unicast" checked> Unicast</label>
+                  <label><input type="radio" name="packetMode" value="broadcast"> Broadcast</label>
+                </div>
+                <button id="sendPacket">Send Packet</button>
+              </div>
+            </div>
+          </div>          <!-- Advanced Controls Section (Collapsed by default) -->
+          <div class="collapsible-section">
+            <div class="section-header">
+              <h3>Advanced Controls</h3>
+              <span class="toggle-icon">▶</span>
+            </div>
+            <div class="section-content" style="display: none;">
+              <button id="autoSimulate">Auto Simulate</button>
+              
+              <div class="network-controls">
+                <button id="addNode">Add Node</button>
+                <button id="removeNode">Remove Node</button>
+                <button id="simulateCollisionBtn">Simulate Collision</button>
               </div>
               
-              <!-- Load Testing -->
-              <div class="config-item">
-                <label for="loadTestPackets">Test Packets: <span id="loadTestPacketsValue">10</span></label>
-                <input type="range" id="loadTestPackets" min="5" max="50" step="5" value="10">
-                <button id="runLoadTest">Run Load Test</button>
-              </div>
-              
-              <!-- Collision Detection Toggle -->
-              <div class="config-item">
-                <label><input type="checkbox" id="enableCollisions" checked> Enable Collision Detection</label>
+              <!-- Network Configuration -->
+              <div class="config-panel">
+                <h3>Network Configuration</h3>
+                  <!-- Latency Simulation -->
+                <div class="config-item">
+                  <label for="latencySlider">Latency (ms): <span id="latencyValue">0</span></label>
+                  <input type="range" id="latencySlider" min="0" max="1000" step="50" value="0">
+                </div>
+                
+                <!-- Packet Size -->
+                <div class="config-item">
+                  <label for="packetSizeSlider">Packet Size (bytes): <span id="packetSizeValue">64</span></label>
+                  <input type="range" id="packetSizeSlider" min="32" max="1500" step="32" value="64">
+                </div>
+                
+                <!-- Load Testing -->
+                <div class="config-item">
+                  <label for="loadTestPackets">Test Packets: <span id="loadTestPacketsValue">10</span></label>
+                  <input type="range" id="loadTestPackets" min="5" max="50" step="5" value="10">
+                  <button id="runLoadTest">Run Load Test</button>
+                </div>
+                
+                <!-- Collision Detection Toggle -->
+                <div class="config-item">
+                  <label><input type="checkbox" id="enableCollisions" checked> Enable Collision Detection</label>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        
-        <!-- Load Test Results Section -->
-        <div id="loadTestResults" class="load-test-results" style="display: none;">
-          <h4>Load Test Results</h4>
-          <div class="metric">
-            <span>Packets Sent:</span>
-            <span id="metricSent" class="metric-value">0</span>
-          </div>
-          <div class="metric">
-            <span>Packets Delivered:</span>
-            <span id="metricDelivered" class="metric-value">0</span>
-          </div>
-          <div class="metric">
-            <span>Collisions:</span>
-            <span id="metricCollisions" class="metric-value">0</span>
-          </div>
-          <div class="metric">
-            <span>Avg. Delivery Time:</span>
-            <span id="metricTime" class="metric-value">0 ms</span>
+            <!-- Load Test Results Section -->
+          <div id="loadTestResults" class="load-test-results" style="display: none;">
+            <h4>Load Test Results</h4>
+            <div class="metric">
+              <span>Packets Sent:</span>
+              <span id="metricSent" class="metric-value">0</span>
+            </div>
+            <div class="metric">
+              <span>Packets Delivered:</span>
+              <span id="metricDelivered" class="metric-value">0</span>
+            </div>
+            <div class="metric">
+              <span>Collisions:</span>
+              <span id="metricCollisions" class="metric-value">0</span>
+            </div>
+            <div class="metric">
+              <span>Avg. Delivery Time:</span>
+              <span id="metricTime" class="metric-value">0 ms</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
     <!-- External JavaScript files -->
     <script defer src="js/config.js"></script>
