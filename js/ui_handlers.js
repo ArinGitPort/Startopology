@@ -1,16 +1,4 @@
 /**
- * Updates the text of the theme toggle button based on the current theme.
- */
-function updateThemeToggleText() {
-  const button = document.getElementById("themeToggle");
-  if (document.body.classList.contains("dark-theme")) {
-    button.textContent = "☀️ Light Theme";
-  } else {
-    button.textContent = "🌙 Dracula Theme";
-  }
-}
-
-/**
  * Updates the source and target node dropdown selectors in the UI.
  */
 function updateNodeSelectors() {

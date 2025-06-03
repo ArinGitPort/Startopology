@@ -3,13 +3,6 @@
  * This function is called when the DOM is fully loaded.
  */
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize UI elements and themes
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
-    document.body.className = savedTheme;
-  }
-  updateThemeToggleText(); // Ensure button text is correct on load
-  
   // Initialize control event listeners
   initConfigControls(); 
   initCollapsibleSections();
@@ -19,22 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
   updateVisuals(); // Explicit call to ensure visuals are up-to-date
   blinkInactiveEdges();
   addLogEntry("Star Topology Simulator initialized. Welcome!", "info");
-
   // Setup main event listeners for buttons and controls
-  document.getElementById("themeToggle").addEventListener("click", function() {
-    const bodyClass = document.body.classList;
-    if (bodyClass.contains("light-theme")) {
-      bodyClass.remove("light-theme");
-      bodyClass.add("dark-theme");
-      localStorage.setItem('theme', 'dark-theme');
-    } else {
-      bodyClass.remove("dark-theme");
-      bodyClass.add("light-theme");
-      localStorage.setItem('theme', 'light-theme');
-    }
-    updateThemeToggleText();
-    updateVisuals(); // Re-render visuals if theme affects network elements
-  });
 
   // User Guide Listeners
   document.getElementById("showGuide").addEventListener("click", () => {

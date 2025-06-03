@@ -35,79 +35,6 @@
         100% { transform: scale(2); opacity: 0; }
       }
 
-      /* Dracula Theme Variables */
-      :root {
-        --bg-light: #f7f9fc;
-        --text-light: #2c3e50;
-        --primary-light: #3498db;
-        --secondary-light: #2980b9;
-        --danger-light: #e74c3c;
-        --success-light: #27ae60;
-        --card-light: #ffffff;
-        --border-light: #e0e6ed;
-
-        --bg-dark: #282a36;
-        --text-dark: #f8f8f2;
-        --primary-dark: #bd93f9;
-        --secondary-dark: #6272a4;
-        --danger-dark: #ff5555;
-        --success-dark: #50fa7b;
-        --card-dark: #44475a;
-        --border-dark: #6272a4;
-      }
-
-      body.light-theme {
-        --bg: var(--bg-light);
-        --text: var(--text-light);
-        --primary: var(--primary-light);
-        --secondary: var(--secondary-light);
-        --danger: var(--danger-light);
-        --success: var(--success-light);
-        --card: var(--card-light);
-        --border: var(--border-light);
-      }
-
-      body.dark-theme {
-        --bg: var(--bg-dark);
-        --text: var(--text-dark);
-        --primary: var(--primary-dark);
-        --secondary: var(--secondary-dark);
-        --danger: var(--danger-dark);
-        --success: var(--success-dark);
-        --card: var(--card-dark);
-        --border: var(--border-dark);
-      }
-
-      /* Theme Toggle Button */
-      #themeToggle {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        padding: 8px 14px;
-        border-radius: 20px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border: 2px solid var(--border);
-        font-size: 15px;
-        font-weight: 500;
-      }
-
-      body.light-theme #themeToggle {
-        background: #282a36;
-        color: #f8f8f2;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      }
-
-      body.dark-theme #themeToggle {
-        background: #f8f8f2;
-        color: #282a36;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-      }
-
       /* Layout styles */
       .main-layout {
         display: flex;
@@ -134,12 +61,10 @@
       /* Packet Log */
       .packet-log {
         margin-top: 30px;
-      }
-
-      .packet-log h2 {
+      }      .packet-log h2 {
         font-size: 18px;
         margin-bottom: 15px;
-        color: var(--primary);
+        color: #3498db;
       }
 
       .log-entry {
@@ -148,28 +73,24 @@
         border-radius: 4px;
         font-size: 14px;
         background: rgba(255,255,255,0.1);
-      }
-
-      .log-entry.source {
-        border-left: 3px solid var(--primary);
+      }      .log-entry.source {
+        border-left: 3px solid #3498db;
       }
 
       .log-entry.target {
-        border-left: 3px solid var(--success);
+        border-left: 3px solid #27ae60;
       }
 
       .log-entry.error {
-        border-left: 3px solid var(--danger);
+        border-left: 3px solid #e74c3c;
       }
 
       .log-container {
         max-height: 450px;
         overflow-y: auto;
         border-radius: 4px;
-      }
-
-      .log-time {
-        color: var(--secondary);
+      }      .log-time {
+        color: #2980b9;
         font-size: 12px;
         margin-bottom: 5px;
       }
@@ -192,11 +113,9 @@
         display: flex;
         gap: 10px;
         margin: 15px 0;
-      }
-
-      /* Traffic visualization */
+      }      /* Traffic visualization */
       .traffic-low {
-        color: var(--success);
+        color: #27ae60;
       }
       
       .traffic-medium {
@@ -204,12 +123,10 @@
       }
       
       .traffic-high {
-        color: var(--danger);
+        color: #e74c3c;
       }
     </style>
-  </head>
-  <body class="light-theme">
-    <button id="themeToggle">🌙 Dark Mode</button>
+  </head>  <body>
     
     <!-- User Guide Section -->
     <div id="userGuide" class="user-guide">
