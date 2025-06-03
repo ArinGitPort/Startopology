@@ -204,21 +204,17 @@ let demoTimeoutId = null;
  * Stops the currently running demo sequence.
  */
 function stopDemoSequence() {
+  console.log("stopDemoSequence called, isDemoRunning:", isDemoRunning);
   isDemoRunning = false;
   if (demoTimeoutId) {
     clearTimeout(demoTimeoutId);
     demoTimeoutId = null;
   }
-  
-  // Reset button text and styling
+    // Reset button text and styling
   const demoButton = document.getElementById("startDemo");
   if (demoButton) {
     demoButton.textContent = "Run Demo Sequence";
     demoButton.classList.remove("stop-mode");
-    demoButton.onclick = () => {
-      document.getElementById("userGuide").style.display = "none";
-      runDemoSequence();
-    };
   }
   
   // Reset network state to normal
@@ -284,6 +280,7 @@ function resetNetworkToActiveState() {
  * Runs a demonstration sequence showcasing the simulator's features.
  */
 function runDemoSequence() {
+  console.log("runDemoSequence called, isDemoRunning:", isDemoRunning);
   // Clear any existing animations and reset states
   cleanupPacketElements();
   isAnimatingPacket = false;
@@ -292,15 +289,13 @@ function runDemoSequence() {
     autoSimulateInterval = null;
     document.getElementById("autoSimulate").textContent = "Auto Simulate";
   }
-  
-  // Set demo running state
+    // Set demo running state
   isDemoRunning = true;
-    // Update button to stop demo
+  // Update button to stop demo
   const demoButton = document.getElementById("startDemo");
   if (demoButton) {
     demoButton.textContent = "Stop Demo";
     demoButton.classList.add("stop-mode");
-    demoButton.onclick = stopDemoSequence;
   }
   
   addLogEntry("Starting demonstration sequence... (User Guide will close)", "info");
@@ -676,16 +671,11 @@ function runDemoSequence() {
       // Demo completed - reset state
       isDemoRunning = false;
       demoTimeoutId = null;
-      
-      // Reset button text and styling
+        // Reset button text and styling
       const demoButton = document.getElementById("startDemo");
       if (demoButton) {
         demoButton.textContent = "Run Demo Sequence";
         demoButton.classList.remove("stop-mode");
-        demoButton.onclick = () => {
-          document.getElementById("userGuide").style.display = "none";
-          runDemoSequence();
-        };
       }
       
       // Reset network state to normal after demo completion

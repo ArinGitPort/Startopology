@@ -21,10 +21,16 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   document.getElementById("closeGuide").addEventListener("click", () => {
     document.getElementById("userGuide").style.display = "none";
-  });
-  document.getElementById("startDemo").addEventListener("click", () => {
-    document.getElementById("userGuide").style.display = "none"; // Close the guide
-    runDemoSequence();
+  });  document.getElementById("startDemo").addEventListener("click", () => {
+    console.log("Demo button clicked. isDemoRunning:", isDemoRunning);
+    if (isDemoRunning) {
+      console.log("Stopping demo sequence");
+      stopDemoSequence();
+    } else {
+      console.log("Starting demo sequence");
+      document.getElementById("userGuide").style.display = "none"; // Close the guide
+      runDemoSequence();
+    }
   });
 
   // Packet Log Control Listeners
