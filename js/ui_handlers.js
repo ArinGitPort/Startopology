@@ -5,27 +5,69 @@ function updateNodeSelectors() {
   const sourceSelect = document.getElementById("sourceNode");
   const targetSelect = document.getElementById("targetNode");
   
+  // Enhanced null safety checks with detailed error reporting
+  if (!sourceSelect) {
+    console.error("Source node selector element not found in DOM");
+    addLogEntry("Error: Source node selector not available", "error");
+    return;
+  }
+  
+  if (!targetSelect) {
+    console.error("Target node selector element not found in DOM");
+    addLogEntry("Error: Target node selector not available", "error");
+    return;
+  }
+  
+  // Store current values before clearing
   const sourceVal = sourceSelect.value;
   const targetVal = targetSelect.value;
   
-  sourceSelect.innerHTML = '<option value="">Select Source Node</option>';
-  targetSelect.innerHTML = '<option value="">Select Target Node</option>';
-  
-  for (let i = 1; i <= nodeCount; i++) {
-    const nodeId = `node${i}`;
-    const sourceOpt = document.createElement('option');
-    sourceOpt.value = nodeId;
-    sourceOpt.textContent = `PC ${i}`;
-    sourceSelect.appendChild(sourceOpt);
+  try {
+    sourceSelect.innerHTML = '<option value="">Select Source Node</option>';
+    targetSelect.innerHTML = '<option value="">Select Target Node</option>';
     
-    const targetOpt = document.createElement('option');
-    targetOpt.value = nodeId;
-    targetOpt.textContent = `PC ${i}`;
-    targetSelect.appendChild(targetOpt);
+    for (let i = 1; i <= nodeCount; i++) {
+      const nodeId = `node${i}`;
+      try {
+        // Create source option with error handling
+        const sourceOpt = document.createElement('option');
+        if (!sourceOpt) {
+          throw new Error(`Failed to create source option for ${nodeId}`);
+        }
+        sourceOpt.value = nodeId;
+        sourceOpt.textContent = `PC ${i}`;
+        sourceSelect.appendChild(sourceOpt);
+        
+        // Create target option with error handling
+        const targetOpt = document.createElement('option');
+        if (!targetOpt) {
+          throw new Error(`Failed to create target option for ${nodeId}`);
+        }
+        targetOpt.value = nodeId;
+        targetOpt.textContent = `PC ${i}`;
+        targetSelect.appendChild(targetOpt);
+      } catch (error) {
+        console.error(`Error creating option for node ${nodeId}:`, error);
+        addLogEntry(`Failed to create selector option for PC ${i}`, "error");
+      }
+    }
+    
+    // Safely restore previous values with validation
+    try {
+      if (sourceVal && data && data.nodes && data.nodes.get(sourceVal)) {
+        sourceSelect.value = sourceVal;
+      }
+      if (targetVal && data && data.nodes && data.nodes.get(targetVal)) {
+        targetSelect.value = targetVal;
+      }
+    } catch (error) {
+      console.error("Error restoring selector values:", error);
+      addLogEntry("Warning: Could not restore previous selector values", "error");
+    }
+  } catch (error) {
+    console.error("Critical error in updateNodeSelectors:", error);
+    addLogEntry("Critical error updating node selectors", "error");
   }
-  
-  if (sourceVal && data.nodes.get(sourceVal)) sourceSelect.value = sourceVal;
-  if (targetVal && data.nodes.get(targetVal)) targetSelect.value = targetVal;
 }
 
 /**
@@ -35,48 +77,61 @@ function updateNodeSelectors() {
  */
 function addLogEntry(message, type = "info") {
   const logContainer = document.getElementById("packetLog");
-  const time = new Date().toLocaleTimeString();
   
-  const entry = document.createElement("div");
-  entry.className = `log-entry ${type}`;
-  
-  const timeSpan = document.createElement("div");
-  timeSpan.className = "log-time";
-  timeSpan.textContent = time;
-  
-  const messageDiv = document.createElement("div");
-  messageDiv.innerHTML = message; // Use innerHTML to allow for styled spans in messages
-  
-  entry.appendChild(timeSpan);
-  entry.appendChild(messageDiv);
-  
-  // Add animation for new entries
-  entry.style.opacity = '0';
-  entry.style.transform = 'translateY(10px)';
-  
-  packetLogEntries.push(entry);
-  if (packetLogEntries.length > 50) {
-    packetLogEntries.shift(); // Remove the oldest entry
+  // Add null safety check
+  if (!logContainer) {
+    console.error("Log container not found");
+    return;
   }
   
-  logContainer.innerHTML = ""; // Clear existing logs
-  packetLogEntries.forEach((item, index) => {
-    logContainer.appendChild(item); // Add entries back
+  try {
+    const time = new Date().toLocaleTimeString();
     
-    // Animate only the newest entry
-    if (index === packetLogEntries.length - 1) {
-      setTimeout(() => {
-        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        item.style.opacity = '1';
-        item.style.transform = 'translateY(0)';
-      }, 10);
+    const entry = document.createElement("div");
+    entry.className = `log-entry ${type}`;
+    
+    const timeSpan = document.createElement("div");
+    timeSpan.className = "log-time";
+    timeSpan.textContent = time;
+    
+    const messageDiv = document.createElement("div");
+    messageDiv.innerHTML = message; // Use innerHTML to allow for styled spans in messages
+    
+    entry.appendChild(timeSpan);
+    entry.appendChild(messageDiv);
+  
+    // Add animation for new entries
+    entry.style.opacity = '0';
+    entry.style.transform = 'translateY(10px)';
+    
+    packetLogEntries.push(entry);
+    if (packetLogEntries.length > 50) {
+      packetLogEntries.shift(); // Remove the oldest entry
     }
-  });
-  
-  // Update log count
-  updateLogCount();
-  
-  logContainer.scrollTop = logContainer.scrollHeight; // Scroll to the bottom
+    
+    logContainer.innerHTML = ""; // Clear existing logs
+    packetLogEntries.forEach((item, index) => {
+      logContainer.appendChild(item); // Add entries back
+      
+      // Animate only the newest entry
+      if (index === packetLogEntries.length - 1) {
+        setTimeout(() => {
+          item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          item.style.opacity = '1';
+          item.style.transform = 'translateY(0)';
+        }, 10);
+      }
+    });
+    
+    // Update log count
+    updateLogCount();
+    
+    logContainer.scrollTop = logContainer.scrollHeight; // Scroll to the bottom
+  } catch (error) {
+    console.error("Error in addLogEntry:", error);
+    // Fallback: try to show error in console at least
+    console.log(`Log Entry [${type}]: ${message}`);
+  }
 }
 
 /**
@@ -139,35 +194,131 @@ function initCollapsibleSections() {
 }
 
 /**
- * Initializes the control event listeners for configuration sliders (latency, packet size, etc.).
+ * Enhanced configuration controls initialization with comprehensive error handling
  */
 function initConfigControls() {
-  const latencySlider = document.getElementById('latencySlider');
-  const latencyValue = document.getElementById('latencyValue');
-  latencySlider.addEventListener('input', function() {
-    currentLatency = parseInt(this.value);
-    latencyValue.textContent = currentLatency;
-  });
-  
-  const packetSizeSlider = document.getElementById('packetSizeSlider');
-  const packetSizeValue = document.getElementById('packetSizeValue');
-  packetSizeSlider.addEventListener('input', function() {
-    currentPacketSize = parseInt(this.value);
-    packetSizeValue.textContent = currentPacketSize;
-  });
-  
-  const loadTestPacketsSlider = document.getElementById('loadTestPackets');
-  const loadTestPacketsValue = document.getElementById('loadTestPacketsValue');
-  loadTestPacketsSlider.addEventListener('input', function() {
-    loadTestPacketsValue.textContent = this.value;
-  });
-  
-  document.getElementById('runLoadTest').addEventListener('click', runLoadTest);
-  
-  const enableCollisionsCheckbox = document.getElementById('enableCollisions');
-  enableCollisionsCheckbox.addEventListener('change', function() {
-    enableCollisions = this.checked;
-  });
+  try {
+    // Latency slider with error handling
+    const latencySlider = document.getElementById('latencySlider');
+    const latencyValue = document.getElementById('latencyValue');
+    
+    if (latencySlider && latencyValue) {
+      latencySlider.addEventListener('input', function() {
+        try {
+          const value = parseInt(this.value);
+          if (isNaN(value) || value < 0) {
+            console.warn("Invalid latency value, using 0");
+            currentLatency = 0;
+            latencyValue.textContent = "0";
+            this.value = "0";
+          } else {
+            currentLatency = value;
+            latencyValue.textContent = value.toString();
+          }
+        } catch (error) {
+          console.error("Error updating latency:", error);
+          currentLatency = 0;
+          latencyValue.textContent = "0";
+        }
+      });
+    } else {
+      console.error("Latency slider or value element not found");
+      addLogEntry("Warning: Latency controls not available", "error");
+    }
+    
+    // Packet size slider with error handling
+    const packetSizeSlider = document.getElementById('packetSizeSlider');
+    const packetSizeValue = document.getElementById('packetSizeValue');
+    
+    if (packetSizeSlider && packetSizeValue) {
+      packetSizeSlider.addEventListener('input', function() {
+        try {
+          const value = parseInt(this.value);
+          if (isNaN(value) || value < 1) {
+            console.warn("Invalid packet size value, using 64");
+            currentPacketSize = 64;
+            packetSizeValue.textContent = "64";
+            this.value = "64";
+          } else {
+            currentPacketSize = value;
+            packetSizeValue.textContent = value.toString();
+          }
+        } catch (error) {
+          console.error("Error updating packet size:", error);
+          currentPacketSize = 64;
+          packetSizeValue.textContent = "64";
+        }
+      });
+    } else {
+      console.error("Packet size slider or value element not found");
+      addLogEntry("Warning: Packet size controls not available", "error");
+    }
+    
+    // Load test packets slider with error handling
+    const loadTestPacketsSlider = document.getElementById('loadTestPackets');
+    const loadTestPacketsValue = document.getElementById('loadTestPacketsValue');
+    
+    if (loadTestPacketsSlider && loadTestPacketsValue) {
+      loadTestPacketsSlider.addEventListener('input', function() {
+        try {
+          const value = parseInt(this.value);
+          if (isNaN(value) || value < 1) {
+            console.warn("Invalid load test packet count, using 1");
+            loadTestPacketsValue.textContent = "1";
+            this.value = "1";
+          } else {
+            loadTestPacketsValue.textContent = value.toString();
+          }
+        } catch (error) {
+          console.error("Error updating load test packet count:", error);
+          loadTestPacketsValue.textContent = "1";
+        }
+      });
+    } else {
+      console.warn("Load test controls not found (may be expected)");
+    }
+    
+    // Run load test button with error handling
+    const runLoadTestBtn = document.getElementById('runLoadTest');
+    if (runLoadTestBtn) {
+      runLoadTestBtn.addEventListener('click', function() {
+        try {
+          runLoadTest();
+        } catch (error) {
+          console.error("Error running load test:", error);
+          addLogEntry("Error running load test", "error");
+        }
+      });
+    } else {
+      console.warn("Run load test button not found");
+    }
+    
+    // Collision detection checkbox with error handling
+    const enableCollisionsCheckbox = document.getElementById('enableCollisions');
+    if (enableCollisionsCheckbox) {
+      enableCollisionsCheckbox.addEventListener('change', function() {
+        try {
+          enableCollisions = this.checked;
+          console.log(`Collision detection ${enableCollisions ? 'enabled' : 'disabled'}`);
+        } catch (error) {
+          console.error("Error updating collision detection setting:", error);
+          enableCollisions = true; // Default to enabled
+        }
+      });
+    } else {
+      console.warn("Collision detection checkbox not found");
+      enableCollisions = true; // Default to enabled
+    }
+
+  } catch (error) {
+    console.error("Critical error in initConfigControls:", error);
+    addLogEntry("Error initializing configuration controls", "error");
+    
+    // Set safe defaults
+    currentLatency = 0;
+    currentPacketSize = 64;
+    enableCollisions = true;
+  }
 }
 
 /**
@@ -275,119 +426,166 @@ function resetNetworkToActiveState() {
 }
 
 /**
- * Runs a demonstration sequence showcasing the simulator's features.
+ * Enhanced demo sequence error recovery system
+ */
+function safeExecuteAction(actionFn, actionName, onError = null) {
+  try {
+    console.log(`Executing demo action: ${actionName}`);
+    actionFn();
+    return true;
+  } catch (error) {
+    console.error(`Error in demo action "${actionName}":`, error);
+    addLogEntry(`Demo error in ${actionName}: ${error.message}`, "error");
+    
+    if (onError && typeof onError === 'function') {
+      try {
+        onError(error);
+      } catch (recoveryError) {
+        console.error(`Error in recovery function for "${actionName}":`, recoveryError);
+      }
+    }
+    
+    return false;
+  }
+}
+
+/**
+ * Enhanced demo sequence with improved error handling and recovery
  */
 function runDemoSequence() {
   console.log("runDemoSequence called, isDemoRunning:", isDemoRunning);
-  // Clear any existing animations and reset states
-  cleanupPacketElements();
-  isAnimatingPacket = false;
-  if (autoSimulateInterval) {
-    clearInterval(autoSimulateInterval);
-    autoSimulateInterval = null;
-    document.getElementById("autoSimulate").textContent = "Auto Simulate";
+  
+  // Cleanup and reset states with error handling
+  try {
+    cleanupPacketElements();
+    isAnimatingPacket = false;
+    
+    if (autoSimulateInterval) {
+      clearInterval(autoSimulateInterval);
+      autoSimulateInterval = null;
+      const autoBtn = document.getElementById("autoSimulate");
+      if (autoBtn) {
+        autoBtn.textContent = "Auto Simulate";
+      }
+    }
+  } catch (error) {
+    console.error("Error during demo initialization cleanup:", error);
+    addLogEntry("Warning: Could not fully cleanup before demo", "error");
   }
-    // Set demo running state
+
+  // Set demo running state
   isDemoRunning = true;
-  // Update button to stop demo
-  const demoButton = document.getElementById("startDemo");
-  if (demoButton) {
-    demoButton.textContent = "Stop Demo";
-    demoButton.classList.add("stop-mode");
+  
+  // Update button to stop demo with error handling
+  try {
+    const demoButton = document.getElementById("startDemo");
+    if (demoButton) {
+      demoButton.textContent = "Stop Demo";
+      demoButton.classList.add("stop-mode");
+    }
+  } catch (error) {
+    console.error("Error updating demo button:", error);
   }
   
-  addLogEntry("Starting demonstration sequence... (User Guide will close)", "info");
-  let delay = 2000; // Increased base delay for better observation
+  addLogEntry("Starting enhanced demonstration sequence...", "info");
+  let delay = 2000;
   let actionIndex = 0;
+  let consecutiveErrors = 0;
+  const maxConsecutiveErrors = 3;
 
+  // Enhanced action sequence with error recovery
   const sequence = [
-    // Basic Unicast - Fixed to directly use the core functions without UI handlers
-    () => {
-      addLogEntry("Demo: Resetting network state.", "info");
-      resetAll();
-      
-      // Update UI selectors to reflect what we're doing
-      setTimeout(() => {
-        // Make sure dropdowns exist and have options
-        if (document.getElementById("sourceNode") && document.getElementById("targetNode")) {
-          document.getElementById("sourceNode").value = "node1";
-          document.getElementById("targetNode").value = "node3";
-          
-          if (document.querySelector('input[name="packetMode"]')) {
-            document.querySelector('input[name="packetMode"][value="unicast"]').checked = true;
+    {
+      name: "Reset Network",
+      action: () => {
+        resetAll();
+        setTimeout(() => {
+          if (document.getElementById("sourceNode") && document.getElementById("targetNode")) {
+            document.getElementById("sourceNode").value = "node1";
+            document.getElementById("targetNode").value = "node3";
           }
-          
-          addLogEntry("Demo: Sending a unicast packet from PC 1 to PC 3.", "info");
-          
-          // Create packet directly instead of using sendPacket() UI handler
-          // This avoids dependency on UI elements that might be causing errors
-          setTimeout(() => {
-            if (canTransmit("node1", "node3")) { // Check if transmission is possible
-              const packetData = {
-                id: 'demo-' + Date.now(),
-                source: "node1",
-                target: "node3",
-                size: currentPacketSize,
-                creationTime: Date.now()
-              };
-              sendPacketWithData(packetData);
-            } else {
-              addLogEntry("Demo: Cannot send packet. Check if nodes are active.", "error");
-            }
-          }, 500);
-        } else {
-          addLogEntry("Demo: Error accessing UI elements.", "error");
+        }, 500);
+      },
+      recovery: () => {
+        console.log("Recovery: Attempting basic network reset");
+        try {
+          resetAll();
+        } catch (e) {
+          console.error("Recovery failed for network reset:", e);
         }
-      }, 500);
+      }
     },
-    // Node failure and send attempt - Simplified and made more robust
-    () => {
-      if (!nodeStatus["node4"]) {
-        addLogEntry("Demo: PC 4 already inactive, activating it first.", "info");
-        toggleNode("node4"); // Make it active first
-        setTimeout(() => toggleNode("node4"), 300); // Then toggle it back off
-      } else {
+    {
+      name: "Send Unicast Packet", 
+      action: () => {
+        addLogEntry("Demo: Sending unicast packet from PC 1 to PC 3.", "info");
+        setTimeout(() => {
+          if (canTransmit("node1", "node3")) {
+            sendPacketWithData({
+              id: 'demo-unicast-' + Date.now(),
+              source: "node1",
+              target: "node3", 
+              size: currentPacketSize,
+              creationTime: Date.now()
+            });
+          } else {
+            addLogEntry("Demo: Cannot send packet - nodes inactive", "error");
+          }
+        }, 500);
+      },
+      recovery: () => {
+        addLogEntry("Recovery: Skipping unicast packet", "info");
+      }
+    },
+    {
+      name: "Node Failure Simulation",
+      action: () => {
         addLogEntry("Demo: Simulating node failure (PC 4).", "info");
-        toggleNode("node4");
+        if (nodeStatus["node4"]) {
+          toggleNode("node4");
+        }
+      },
+      recovery: () => {
+        addLogEntry("Recovery: Ensuring PC 4 is inactive", "info");
+        if (nodeStatus["node4"]) {
+          try {
+            toggleNode("node4");
+          } catch (e) {
+            console.error("Recovery toggle failed:", e);
+          }
+        }
       }
     },
-    // More robust approach to sending to inactive node
-    () => {
-      addLogEntry("Demo: Attempting to send to inactive node (PC 4).", "info");
-      // Update UI to reflect what we're simulating
-      if (document.getElementById("sourceNode") && document.getElementById("targetNode")) {
-        document.getElementById("sourceNode").value = "node2";
-        document.getElementById("targetNode").value = "node4";
+    {
+      name: "Send to Inactive Node",
+      action: () => {
+        addLogEntry("Demo: Attempting to send to inactive PC 4.", "info");
+        sendPacketWithRetry("node2", "node4", 1);
+      },
+      recovery: () => {
+        addLogEntry("Recovery: Skipped send to inactive node", "info");
       }
-      
-      // Direct call the function without relying on UI handler
-      sendPacketWithRetry("node2", "node4", 2); // Use the retry version with 2 attempts
     },
-    // Restore node and successful send
-    () => {
-      addLogEntry("Demo: Restoring PC 4.", "info");
-      toggleNode("node4");
-      // Wait for node status to update
-      setTimeout(() => {
-        updateVisuals();
-      }, 300);
-    },
-    () => {
-      addLogEntry("Demo: Sending to now active PC 4.", "info");
-      // Update UI to reflect what we're demonstrating
-      if (document.getElementById("sourceNode") && document.getElementById("targetNode")) {
-        document.getElementById("sourceNode").value = "node2";
-        document.getElementById("targetNode").value = "node4";
+    {
+      name: "Restore Node",
+      action: () => {
+        addLogEntry("Demo: Restoring PC 4.", "info");
+        if (!nodeStatus["node4"]) {
+          toggleNode("node4");
+        }
+        setTimeout(() => updateVisuals(), 300);
+      },
+      recovery: () => {
+        addLogEntry("Recovery: Ensuring PC 4 is active", "info");
+        if (!nodeStatus["node4"]) {
+          try {
+            toggleNode("node4");
+            updateVisuals();
+          } catch (e) {
+            console.error("Recovery restore failed:", e);
+          }
+        }
       }
-      
-      // Direct function call for more reliability
-      sendPacketWithData({
-        id: 'demo-' + Date.now(),
-        source: "node2",
-        target: "node4",
-        size: currentPacketSize,
-        creationTime: Date.now()
-      });
     },
     // Broadcast - Simplified to avoid UI dependency
     () => {
@@ -633,53 +831,62 @@ function runDemoSequence() {
     }
     
     if (actionIndex < sequence.length) {
-      // If an animation is in progress, wait until it completes
+      // Check for too many consecutive errors
+      if (consecutiveErrors >= maxConsecutiveErrors) {
+        addLogEntry(`Demo stopped: too many consecutive errors (${consecutiveErrors})`, "error");
+        stopDemoSequence();
+        return;
+      }
+
+      // Wait for animations to complete
       if (isAnimatingPacket && actionIndex > 0 && actionIndex < sequence.length - 1) {
-        demoTimeoutId = setTimeout(() => runNextAction(), 1000); // Check again in 1 second
+        demoTimeoutId = setTimeout(() => runNextAction(), 1000);
         return;
       }
       
-      try {
-        sequence[actionIndex]();
-        actionIndex++;
-        
-        // Determine appropriate delay based on action type
-        let currentActionDelay = delay;
-        const prevAction = String(sequence[actionIndex-1]);
-        
-        if (prevAction.includes("sendPacket") || 
-            prevAction.includes("simulateCollision") ||
-            prevAction.includes("broadcastPacket") ||
-            prevAction.includes("runLoadTest")) {
-          currentActionDelay = delay * 3; // Much longer delay for packet animations
-        }
-        
-        if (prevAction.includes("autoSimulate") && autoSimulateInterval) {
-          currentActionDelay = delay * 4; // Let auto-sim run even longer
-        }
+      const currentStep = sequence[actionIndex];
+      const success = safeExecuteAction(
+        currentStep.action, 
+        currentStep.name, 
+        currentStep.recovery
+      );
+      
+      if (success) {
+        consecutiveErrors = 0; // Reset error counter on success
+      } else {
+        consecutiveErrors++;
+      }
+      
+      actionIndex++;
+      
+      // Determine delay based on action type
+      let currentActionDelay = delay;
+      if (currentStep.name.includes("Packet") || currentStep.name.includes("Collision")) {
+        currentActionDelay = delay * 2;
+      }
 
-        demoTimeoutId = setTimeout(runNextAction, currentActionDelay);
-      } catch (e) {
-        console.error("Error in demo sequence:", e);
-        addLogEntry("Demo sequence encountered an error. Continuing to next step.", "error");
-        // Try to continue with next action
-        actionIndex++;
-        demoTimeoutId = setTimeout(runNextAction, delay);
-      }    } else {
+      demoTimeoutId = setTimeout(runNextAction, currentActionDelay);
+      
+    } else {
       // Demo completed - reset state
       isDemoRunning = false;
       demoTimeoutId = null;
-        // Reset button text and styling
-      const demoButton = document.getElementById("startDemo");
-      if (demoButton) {
-        demoButton.textContent = "Run Demo Sequence";
-        demoButton.classList.remove("stop-mode");
-      }
+      consecutiveErrors = 0;
       
-      // Reset network state to normal after demo completion
-      resetNetworkToActiveState();
+      try {
+        const demoButton = document.getElementById("startDemo");
+        if (demoButton) {
+          demoButton.textContent = "Run Demo Sequence";
+          demoButton.classList.remove("stop-mode");
+        }
+        
+        resetNetworkToActiveState();
+      } catch (error) {
+        console.error("Error in demo completion cleanup:", error);
+      }
     }
   }
-  // Start the sequence after a brief initial delay
+  
+  // Start the sequence
   demoTimeoutId = setTimeout(runNextAction, 1000);
-} 
+}

@@ -57,15 +57,60 @@ function createTrailElement(packetSize = 64) {
 }
 
 /**
- * Removes all visual packet and trail elements from the DOM.
+ * Enhanced packet cleanup with comprehensive error handling
  */
 function cleanupPacketElements() {
-  packetElements.forEach(element => {
-    if (element && element.parentNode) {
-      element.parentNode.removeChild(element);
+  try {
+    if (!Array.isArray(packetElements)) {
+      console.warn("packetElements is not an array, reinitializing");
+      packetElements = [];
+      return;
     }
-  });
-  packetElements = [];
+
+    const elementsToRemove = [...packetElements]; // Create copy to avoid mutation during iteration
+    let removedCount = 0;
+    let errorCount = 0;
+
+    elementsToRemove.forEach((element, index) => {
+      try {
+        if (element && element.parentNode) {
+          element.parentNode.removeChild(element);
+          removedCount++;
+        } else if (element) {
+          // Element exists but not in DOM - log for debugging
+          console.warn(`Packet element at index ${index} not in DOM:`, element);
+        }
+      } catch (error) {
+        console.error(`Error removing packet element at index ${index}:`, error);
+        errorCount++;
+      }
+    });
+
+    // Clear the array
+    packetElements.length = 0;
+
+    // Log cleanup results for debugging
+    if (removedCount > 0 || errorCount > 0) {
+      console.log(`Packet cleanup: removed ${removedCount} elements, ${errorCount} errors`);
+    }
+
+    // Reset animation state
+    isAnimatingPacket = false;
+    
+    // Clear active packets array
+    if (Array.isArray(activePackets)) {
+      activePackets.length = 0;
+    } else {
+      activePackets = [];
+    }
+
+  } catch (error) {
+    console.error("Critical error in cleanupPacketElements:", error);
+    // Fallback: force reset arrays
+    packetElements = [];
+    activePackets = [];
+    isAnimatingPacket = false;
+  }
 }
 
 /**
@@ -708,36 +753,86 @@ function createCollisionEffect(x, y) {
 }
 
 /**
- * Processes the next packet in the global packetQueue.
+ * Enhanced packet queue management with race condition protection
+ */
+let isProcessingQueue = false; // Mutex flag to prevent race conditions
+
+/**
+ * Enhanced packet queue processing with race condition protection
  */
 function processPacketQueue() {
-  if (packetQueue.length === 0 || !hubActive) {
-    if (packetQueue.length === 0 && isAnimatingPacket === false) {
-        // If queue is empty and no animation, load test might be complete
-        if(loadTestMetrics.packetsSent > 0 && loadTestMetrics.packetsDelivered + loadTestMetrics.collisions >= loadTestMetrics.packetsSent){
-            addLogEntry("Load test processing complete.", "info");
-        }
-    }
+  // Prevent race conditions with mutex-like flag
+  if (isProcessingQueue) {
+    console.log("Queue processing already in progress, skipping");
     return;
   }
-  
-  if (!isAnimatingPacket) {
-    const nextPacket = packetQueue.shift();
-    updateQueueVisualization(); // Though visual is removed, call keeps structure
-    
-    // Check if source/target nodes for this queued packet still exist and are active
-    if (data.nodes.get(nextPacket.source) && data.nodes.get(nextPacket.target) && 
-        nodeStatus[nextPacket.source] && nodeStatus[nextPacket.target] && hubActive) {
-      sendPacketWithData(nextPacket); // Use sendPacketWithData for queued packets
-    } else {
-      addLogEntry(`Skipping queued packet from ${nextPacket.source.replace("node", "PC ")} to ${nextPacket.target.replace("node", "PC ")}: Node/Hub inactive or removed.`, "error");
-      loadTestMetrics.collisions++; // Or a new metric like 'dropped_due_to_inactive_node'
-      updateLoadTestMetrics();
-      setTimeout(processPacketQueue, 50); // Try next packet quickly
-    }
+
+  if (isAnimatingPacket) {
+    // Try again later if animation is in progress
+    setTimeout(() => processPacketQueue(), 100);
+    return;
   }
-  else {
-    setTimeout(processPacketQueue, 100); // Check again later if busy
+
+  if (packetQueue.length === 0) {
+    // Nothing to process
+    return;
+  }
+
+  try {
+    isProcessingQueue = true;
+    
+    const nextPacket = packetQueue.shift();
+    if (!nextPacket) {
+      console.warn("Retrieved null packet from queue");
+      return;
+    }
+
+    // Validate packet data
+    if (!nextPacket.source || !nextPacket.target) {
+      console.error("Invalid packet data in queue:", nextPacket);
+      addLogEntry("Skipping invalid packet in queue", "error");
+      // Continue to next packet
+      if (packetQueue.length > 0) {
+        setTimeout(() => processPacketQueue(), 50);
+      }
+      return;
+    }
+
+    // Check if nodes are still valid and active
+    if (!hubActive || !nodeStatus[nextPacket.source] || !nodeStatus[nextPacket.target] ||
+        !data.nodes.get(nextPacket.source) || !data.nodes.get(nextPacket.target)) {
+      
+      addLogEntry(`Skipping queued packet from ${nextPacket.source.replace("node", "PC ")} to ${nextPacket.target.replace("node", "PC ")}: Node/Hub inactive or removed.`, "error");
+      
+      // Update metrics if this is a load test packet
+      if (loadTestMetrics && typeof loadTestMetrics.collisions === 'number') {
+        loadTestMetrics.collisions++;
+        updateLoadTestMetrics();
+      }
+      
+      // Continue to next packet
+      setTimeout(() => processPacketQueue(), 50);
+      return;
+    }
+
+    // Send the packet
+    sendPacketWithData(nextPacket);
+    
+    // Process next packet after a delay if queue is not empty
+    if (packetQueue.length > 0) {
+      setTimeout(() => processPacketQueue(), 100);
+    }
+
+  } catch (error) {
+    console.error("Error processing packet queue:", error);
+    addLogEntry("Error processing packet queue", "error");
+    
+    // Try to continue with next packet after error
+    if (packetQueue.length > 0) {
+      setTimeout(() => processPacketQueue(), 200);
+    }
+  } finally {
+    isProcessingQueue = false;
   }
 }
 
@@ -880,4 +975,4 @@ function simulateCollisionOnClick() {
       }
     }, 50);
   }
-} 
+}
