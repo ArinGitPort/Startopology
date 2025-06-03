@@ -181,7 +181,63 @@ function stopDemoSequence() {
     };
   }
   
-  addLogEntry("Demo sequence stopped by user.", "info");
+  // Reset network state to normal
+  resetNetworkToActiveState();
+  
+  addLogEntry("Demo sequence stopped by user. Network reset to normal state.", "info");
+}
+
+/**
+ * Resets all network components to their active state.
+ */
+function resetNetworkToActiveState() {
+  // Ensure the switch/hub is active
+  if (!hubActive) {
+    hubActive = true;
+    const hubButton = document.getElementById("toggleHub");
+    if (hubButton) {
+      hubButton.textContent = "Toggle Switch (ON)";
+    }
+    addLogEntry("Switch restored to active state.", "info");
+  }
+  
+  // Activate all nodes
+  let nodesRestored = 0;
+  for (let i = 1; i <= nodeCount; i++) {
+    const nodeId = `node${i}`;
+    if (data.nodes.get(nodeId) && !nodeStatus[nodeId]) {
+      nodeStatus[nodeId] = true;
+      nodesRestored++;
+    }
+  }
+  
+  if (nodesRestored > 0) {
+    addLogEntry(`Restored ${nodesRestored} inactive node(s) to active state.`, "info");
+  }
+  
+  // Update the visual representation
+  updateVisuals();
+  updateStatusText();
+  
+  // Reset configuration to default values
+  const latencySlider = document.getElementById("latencySlider");
+  const packetSizeSlider = document.getElementById("packetSizeSlider");
+  const latencyValue = document.getElementById("latencyValue");
+  const packetSizeValue = document.getElementById("packetSizeValue");
+  
+  if (latencySlider && latencyValue) {
+    latencySlider.value = 0;
+    latencyValue.textContent = "0";
+    currentLatency = 0;
+  }
+  
+  if (packetSizeSlider && packetSizeValue) {
+    packetSizeSlider.value = 64;
+    packetSizeValue.textContent = "64";
+    currentPacketSize = 64;
+  }
+  
+  addLogEntry("Network configuration reset to default values.", "info");
 }
 
 /**
@@ -576,8 +632,8 @@ function runDemoSequence() {
         // Try to continue with next action
         actionIndex++;
         demoTimeoutId = setTimeout(runNextAction, delay);
-      }
-    } else {      // Demo completed - reset state
+      }    } else {
+      // Demo completed - reset state
       isDemoRunning = false;
       demoTimeoutId = null;
       
@@ -591,6 +647,9 @@ function runDemoSequence() {
           runDemoSequence();
         };
       }
+      
+      // Reset network state to normal after demo completion
+      resetNetworkToActiveState();
     }
   }
   // Start the sequence after a brief initial delay

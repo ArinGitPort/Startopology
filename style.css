@@ -166,11 +166,6 @@ select:focus {
   margin-top: 10px;
 }
 
-/* Dark theme specific changes */
-body.dark-theme .log-container {
-  background: rgba(0,0,0,0.2);
-}
-
 /* Hide edge node details from vis.js */
 .vis-network .vis-manipulation {
   display: none;
@@ -237,13 +232,6 @@ body.dark-theme .log-container {
   border: 1px solid #ff9800;
   box-shadow: 0 0 12px 4px #ff980088;
   transition: opacity 0.3s;
-}
-
-/* Even more visible trail in dark theme */
-body.dark-theme .packet-trail {
-  background: linear-gradient(135deg, #ffe082 60%, #ff9800 100%);
-  border: 1px solid #ffe082;
-  box-shadow: 0 0 16px 6px #ff980088;
 }
 
 /* Custom scrollbar */
@@ -487,15 +475,6 @@ body.dark-theme .packet-trail {
 .demo-button.stop-mode:hover {
   background: #c0392b;
   box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
-}
-
-/* Dark theme adjustments for user guide */
-body.dark-theme .user-guide {
-  border: 1px solid #6272a4;
-}
-
-body.dark-theme .close-guide {
-  color: #f8f8f2;
 }
 
 /* Mobile responsiveness for the guide */
