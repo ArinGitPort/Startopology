@@ -88,8 +88,14 @@ function pulseEffect(nodeId) {
   const centerY = networkRect.height / 2;  // Adjust coordinates to center pulse on nodes
   const pulseSize = 32; // Assuming same size as packet for consistency
   const offset = pulseSize / 2;
-  const xAdjustment = 20; // Move pulse right to center on switch
-  const yAdjustment = 50; // Move pulse down to center on switch
+  
+  // Use same adjustment ratios as packet positioning for resolution independence
+  const xAdjustmentRatio = 17 / networkRect.width;
+  const yAdjustmentRatio = 68 / networkRect.height;
+  
+  const xAdjustment = networkRect.width * xAdjustmentRatio;
+  const yAdjustment = networkRect.height * yAdjustmentRatio;
+  
   const x = centerX + nodePosition.x - offset + xAdjustment;
   const y = centerY + nodePosition.y - offset + yAdjustment;
 
@@ -136,8 +142,13 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
   const networkCenterY = networkRect.height / 2;  // For positioning within the network div (relative positioning)  // Adjust coordinates to center packet on nodes (since CSS positioning uses top-left corner)
   const currentPacketSize = 32; // Current packet size we're using for positioning
   const offset = currentPacketSize / 2; // Half the packet size to center it
-  const xAdjustment = 17; // Move packet right to center on switch
-  const yAdjustment = 68; // Move packet down to center on switch
+  
+  // Make adjustments relative to network size for resolution independence
+  // These ratios are calculated to match the previous fixed values (17px, 68px) on 2K resolution
+  const xAdjustmentRatio = 17 / networkRect.width; // Convert 17px to ratio
+  const yAdjustmentRatio = 68 / networkRect.height; // Convert 68px to ratio
+  const xAdjustment = networkRect.width * xAdjustmentRatio;
+  const yAdjustment = networkRect.height * yAdjustmentRatio;
   
   const startX = networkCenterX + x1 - offset + xAdjustment;
   const startY = networkCenterY + y1 - offset + yAdjustment;
