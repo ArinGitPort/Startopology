@@ -6,14 +6,15 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize control event listeners
   initConfigControls(); 
   initCollapsibleSections();
-
   // Create the initial network
   createNetwork(); // This also calls updateVisuals indirectly via updateNodeSelectors
   updateVisuals(); // Explicit call to ensure visuals are up-to-date
   blinkInactiveEdges();
   addLogEntry("Star Topology Simulator initialized. Welcome!", "info");
+  
+  // Initialize log count display
+  updateLogCount();
   // Setup main event listeners for buttons and controls
-
   // User Guide Listeners
   document.getElementById("showGuide").addEventListener("click", () => {
     document.getElementById("userGuide").style.display = "block";
@@ -25,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById("userGuide").style.display = "none"; // Close the guide
     runDemoSequence();
   });
+
+  // Packet Log Control Listeners
+  document.getElementById("clearLogBtn").addEventListener("click", clearPacketLog);
 
   // Network Control Listeners
   document.getElementById("toggleHub").addEventListener("click", () => {

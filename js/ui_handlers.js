@@ -50,17 +50,57 @@ function addLogEntry(message, type = "info") {
   entry.appendChild(timeSpan);
   entry.appendChild(messageDiv);
   
+  // Add animation for new entries
+  entry.style.opacity = '0';
+  entry.style.transform = 'translateY(10px)';
+  
   packetLogEntries.push(entry);
   if (packetLogEntries.length > 50) {
     packetLogEntries.shift(); // Remove the oldest entry
   }
   
   logContainer.innerHTML = ""; // Clear existing logs
-  packetLogEntries.forEach(item => {
+  packetLogEntries.forEach((item, index) => {
     logContainer.appendChild(item); // Add entries back
+    
+    // Animate only the newest entry
+    if (index === packetLogEntries.length - 1) {
+      setTimeout(() => {
+        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+      }, 10);
+    }
   });
   
+  // Update log count
+  updateLogCount();
+  
   logContainer.scrollTop = logContainer.scrollHeight; // Scroll to the bottom
+}
+
+/**
+ * Updates the log entry count display.
+ */
+function updateLogCount() {
+  const logCountElement = document.getElementById("logCount");
+  if (logCountElement) {
+    const count = packetLogEntries.length;
+    logCountElement.textContent = `${count} ${count === 1 ? 'entry' : 'entries'}`;
+  }
+}
+
+/**
+ * Clears all packet log entries.
+ */
+function clearPacketLog() {
+  packetLogEntries = [];
+  const logContainer = document.getElementById("packetLog");
+  if (logContainer) {
+    logContainer.innerHTML = "";
+  }
+  updateLogCount();
+  addLogEntry("Packet log cleared", "info");
 }
 
 /**

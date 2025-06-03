@@ -56,43 +56,9 @@
       .main-content {
         flex-grow: 1;
         margin-right: 300px;
-      }
-
-      /* Packet Log */
+      }      /* Packet Log - Basic structure (detailed styles in style.css) */
       .packet-log {
         margin-top: 30px;
-      }      .packet-log h2 {
-        font-size: 18px;
-        margin-bottom: 15px;
-        color: #3498db;
-      }
-
-      .log-entry {
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 4px;
-        font-size: 14px;
-        background: rgba(255,255,255,0.1);
-      }      .log-entry.source {
-        border-left: 3px solid #3498db;
-      }
-
-      .log-entry.target {
-        border-left: 3px solid #27ae60;
-      }
-
-      .log-entry.error {
-        border-left: 3px solid #e74c3c;
-      }
-
-      .log-container {
-        max-height: 450px;
-        overflow-y: auto;
-        border-radius: 4px;
-      }      .log-time {
-        color: #2980b9;
-        font-size: 12px;
-        margin-bottom: 5px;
       }
 
       /* New UI element styles */
@@ -178,10 +144,15 @@
       
       <div class="sidebar">
         <h2>Controls</h2>
-        
-        <!-- Packet Log moved to top for better visibility -->
+          <!-- Enhanced Packet Log with better visibility -->
         <div class="packet-log">
-          <h2>Packet Log</h2>
+          <div class="packet-log-header">
+            <h2>Packet Log</h2>
+            <div class="log-controls">
+              <button id="clearLogBtn" class="clear-log-btn" title="Clear Log">🗑️</button>
+              <span id="logCount" class="log-count">0 entries</span>
+            </div>
+          </div>
           <div class="log-container" id="packetLog"></div>
         </div>
         

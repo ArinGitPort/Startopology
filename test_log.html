@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Packet Log Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-controls { margin: 20px 0; }
+        .test-controls button { margin: 5px; padding: 10px; }
+        #testContainer { border: 1px solid #ccc; padding: 20px; margin: 20px 0; }
+    </style>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Packet Log Enhancement Test</h1>
+    
+    <div class="test-controls">
+        <button onclick="testAddEntries()">Add Test Log Entries</button>
+        <button onclick="testClearLog()">Test Clear Log</button>
+        <button onclick="testDifferentTypes()">Test Different Log Types</button>
+    </div>
+    
+    <div id="testContainer">
+        <!-- Packet Log Component -->
+        <div class="packet-log">
+          <div class="packet-log-header">
+            <h2>Packet Log</h2>
+            <div class="log-controls">
+              <button id="clearLogBtn" class="clear-log-btn" title="Clear Log">🗑️</button>
+              <span id="logCount" class="log-count">0 entries</span>
+            </div>
+          </div>
+          <div class="log-container" id="packetLog"></div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/ui_handlers.js"></script>
+    <script>
+        // Initialize
+        document.getElementById("clearLogBtn").addEventListener("click", clearPacketLog);
+        updateLogCount();
+        
+        function testAddEntries() {
+            addLogEntry("Test packet sent from PC 1 to PC 2", "source");
+            addLogEntry("Packet arrived at switch, processing routing", "info");
+            addLogEntry("Packet delivered to PC 2 successfully", "target");
+        }
+        
+        function testClearLog() {
+            clearPacketLog();
+        }
+        
+        function testDifferentTypes() {
+            addLogEntry("Network connection established", "info");
+            addLogEntry("Sending broadcast packet from PC 3", "source");
+            addLogEntry("Packet collision detected, retrying", "error");
+            addLogEntry("Packet received at PC 1", "target");
+            addLogEntry("Switch processing latency: 5ms", "info");
+        }
+    </script>
+</body>
+</html>
