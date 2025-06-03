@@ -3,6 +3,8 @@ const HUB_ACTIVE = "#1565C0";
 const HUB_INACTIVE = "#E53935";
 const NODE_ACTIVE = "#4CAF50";
 const NODE_INACTIVE = "#E53935";
+const EDGE_ACTIVE = "#00ff88";  // Bright green edges for better visibility on dark theme
+const EDGE_INACTIVE = "#ff6b6b";  // Lighter red for better contrast
 const PACKET_COLOR = "#FFEB3B";
 const PACKET_SPEED = 750; // Base animation speed
 

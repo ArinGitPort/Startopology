@@ -3,14 +3,13 @@
  * The hub is placed at the center, with nodes distributed evenly in a circle around it.
  */
 function createNetwork() {
-  const nodes = [
-    {
+  const nodes = [    {
       id: "hub",
       label: "Switch",
       shape: "image",
       image: "switch-hub.png",
       size: 50,
-      font: { size: 16 },
+      font: { size: 16, color: "#ffffff" },  // White text for dark theme
       fixed: true,
       x: 0,
       y: 0,
@@ -55,15 +54,14 @@ function createNetwork() {
     if (!ipConfigurations[nodeId]) {
       ipConfigurations[nodeId] = nodeIP;
     }
-    
-    nodes.push({
+      nodes.push({
       id: nodeId,
       label: `PC ${i}`,
       title: `IP: ${nodeIP}`,
       shape: "image",
       image: "desktop.png",
       size: 40,
-      font: { size: 14 },
+      font: { size: 14, color: "#ffffff" },  // White text for dark theme
       fixed: true,
       x,
       y,
@@ -78,12 +76,11 @@ function createNetwork() {
       shadowSize: 20,
       shadowX: 0,
       shadowY: 0,
-    });
-    edges.push({
+    });edges.push({
       id: `edge${i}`,
       from: "hub",
       to: nodeId,
-      color: { color: "#000000" },
+      color: { color: EDGE_ACTIVE },
       width: 2,
     });
   }
@@ -165,12 +162,10 @@ function updateVisuals() {
     
     // Adjust edge width based on traffic
     if (trafficLevel === 'medium') edgeWidth = 3;
-    if (trafficLevel === 'high') edgeWidth = 4;
-    
-    data.edges.update({
+    if (trafficLevel === 'high') edgeWidth = 4;    data.edges.update({
       id: edgeId,
       color: {
-        color: active ? "#000000" : "#E53935",
+        color: active ? EDGE_ACTIVE : EDGE_INACTIVE,
         opacity: 1,
       },
       width: edgeWidth,
@@ -204,11 +199,10 @@ function blinkInactiveEdges() {
       
       const active = nodeStatus[nodeId] && hubActive;
 
-      if (!active) {
-        // For inactive connections, blink the edges
+      if (!active) {        // For inactive connections, blink the edges
         data.edges.update({
           id: edgeId,
-          color: { color: toggle ? "#E53935" : "#FF0000" }, // Dark red to bright red blink
+          color: { color: toggle ? EDGE_INACTIVE : "#FF0000" }, // Dark red to bright red blink
           dashes: true,
           width: toggle ? 2 : 3, // Slightly change width for more visible blinking
         });

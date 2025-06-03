@@ -6,14 +6,16 @@
 function createPacketElement(packetSize = 64) {
   const packet = document.createElement('div');
   packet.className = 'packet';
-  
-  // Adjust visual size based on packet data size
-  const sizeMultiplier = 0.7 + (packetSize / 1500) * 0.8; // Range: 0.7x to 1.5x
-  const baseSize = 18; // Base visual size in pixels
-  const visualSize = Math.round(baseSize * sizeMultiplier);
+    // Make packet larger and more visible
+  const baseSize = 32; // Increased from 18 to 32 for better visibility
+  const visualSize = baseSize; // Remove size variation for now to focus on positioning
   
   packet.style.width = `${visualSize}px`;
   packet.style.height = `${visualSize}px`;
+  packet.style.backgroundColor = '#00ff88'; // Bright green to match active connection color
+  packet.style.border = '2px solid #ffffff'; // White border for contrast
+  packet.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 255, 136, 0.3)'; // Green glow effect
+  packet.style.zIndex = '9999'; // High z-index to ensure visibility
   
   const networkDiv = document.querySelector('#network');
   if (networkDiv) {
@@ -31,12 +33,21 @@ function createTrailElement(packetSize = 64) {
   const trail = document.createElement('div');
   trail.className = 'packet-trail';
   
-  const sizeMultiplier = 0.7 + (packetSize / 1500) * 0.8;
-  const baseSize = 8;
+  const sizeMultiplier = 0.7 + (packetSize / 1500) * 0.3;
+  const baseSize = 12;
   const visualSize = Math.round(baseSize * sizeMultiplier);
 
   trail.style.width = `${visualSize}px`;
   trail.style.height = `${visualSize}px`;
+  trail.style.backgroundColor = '#00ff88';
+  trail.style.borderRadius = '50%';
+  trail.style.position = 'absolute';
+  trail.style.opacity = '0.7';
+  trail.style.boxShadow = '0 0 10px rgba(0, 255, 136, 0.5)';
+  trail.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+  trail.style.pointerEvents = 'none';
+  trail.style.zIndex = '9998';
+  trail.style.transform = 'translate(-50%, -50%)';
   
   const networkDiv = document.querySelector('#network');
   if (networkDiv) {
@@ -71,13 +82,16 @@ function pulseEffect(nodeId) {
   const nodePosition = positions[nodeId];
   const networkDiv = document.getElementById('network');
   if (!networkDiv) return;
-  
-  // Get the actual network div dimensions for proper positioning
+    // Get the actual network div dimensions for proper positioning
   const networkRect = networkDiv.getBoundingClientRect();
   const centerX = networkRect.width / 2;
-  const centerY = networkRect.height / 2;
-  const x = centerX + nodePosition.x;
-  const y = centerY + nodePosition.y;
+  const centerY = networkRect.height / 2;  // Adjust coordinates to center pulse on nodes
+  const pulseSize = 32; // Assuming same size as packet for consistency
+  const offset = pulseSize / 2;
+  const xAdjustment = 20; // Move pulse right to center on switch
+  const yAdjustment = 50; // Move pulse down to center on switch
+  const x = centerX + nodePosition.x - offset + xAdjustment;
+  const y = centerY + nodePosition.y - offset + yAdjustment;
 
   const pulse = document.createElement('div');
   pulse.className = 'packet pulse-effect'; // Uses packet styles for consistency
@@ -119,20 +133,36 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
   // Get the actual network div position and dimensions
   const networkRect = networkDiv.getBoundingClientRect();
   const networkCenterX = networkRect.width / 2;
-  const networkCenterY = networkRect.height / 2;
+  const networkCenterY = networkRect.height / 2;  // For positioning within the network div (relative positioning)  // Adjust coordinates to center packet on nodes (since CSS positioning uses top-left corner)
+  const currentPacketSize = 32; // Current packet size we're using for positioning
+  const offset = currentPacketSize / 2; // Half the packet size to center it
+  const xAdjustment = 17; // Move packet right to center on switch
+  const yAdjustment = 68; // Move packet down to center on switch
   
-  // For positioning within the network div (relative positioning)
-  const startX = networkCenterX + x1;
-  const startY = networkCenterY + y1;
-  const endX = networkCenterX + x2;
-  const endY = networkCenterY + y2;
+  const startX = networkCenterX + x1 - offset + xAdjustment;
+  const startY = networkCenterY + y1 - offset + yAdjustment;
+  const endX = networkCenterX + x2 - offset + xAdjustment;
+  const endY = networkCenterY + y2 - offset + yAdjustment;
   
-  const startTime = performance.now();
-  const trailInterval = Math.max(50, 120 - packetSize / 20); 
+  // Debug logging for coordinate alignment
+  console.log('Network positioning debug:', {
+    networkRect: { width: networkRect.width, height: networkRect.height },
+    networkCenter: { x: networkCenterX, y: networkCenterY },
+    visJsCoords: { x1, y1, x2, y2 },
+    offset: offset,
+    finalCoords: { startX, startY, endX, endY }
+  });
+    const startTime = performance.now();
+  const trails = []; // Array to store trail elements
   let lastTrailTime = 0;
-  
+  const trailInterval = 50; // Create trail every 50ms
+
   function animate(currentTime) {
     if (!packet.parentNode) { // Packet removed (e.g., due to collision)
+      // Clean up trails
+      trails.forEach(trail => {
+        if (trail && trail.parentNode) trail.parentNode.removeChild(trail);
+      });
       if (onComplete) onComplete();
       return;
     }
@@ -146,6 +176,28 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
     
     packet.style.left = `${currentX}px`;
     packet.style.top = `${currentY}px`;
+    
+    // Create trail effect
+    if (currentTime - lastTrailTime > trailInterval) {
+      const trail = createTrailElement(packetSize);
+      trail.style.left = `${currentX}px`;
+      trail.style.top = `${currentY}px`;
+      trails.push(trail);
+      lastTrailTime = currentTime;
+      
+      // Remove trail after delay with fade effect
+      setTimeout(() => {
+        if (trail && trail.parentNode) {
+          trail.style.opacity = '0';
+          trail.style.transform = 'scale(0.5)';
+          setTimeout(() => {
+            if (trail && trail.parentNode) trail.parentNode.removeChild(trail);
+            const index = trails.indexOf(trail);
+            if (index !== -1) trails.splice(index, 1);
+          }, 200);
+        }
+      }, 800);
+    }
     
     const packetIndex = activePackets.findIndex(p => p.id === packetId);
     if (packetIndex !== -1) {
@@ -165,35 +217,25 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
         // onComplete is not called here as the packet did not reach its destination
         return; 
       }
-    }    if (currentTime - lastTrailTime > trailInterval && progress > 0.1 && progress < 0.9) {
-      lastTrailTime = currentTime;
-      const trail = createTrailElement(packetSize);
-      
-      // Position trail well below the packet path for better visibility
-      trail.style.left = `${currentX}px`;
-      trail.style.top = `${currentY + 35}px`;
-      
-      packetElements.push(trail);
-      
-      setTimeout(() => {
-        if (trail.parentNode) {
-          trail.style.opacity = '0';
-          setTimeout(() => {
-            if (trail.parentNode) trail.parentNode.removeChild(trail);
-            const trailIdx = packetElements.indexOf(trail);
-            if (trailIdx !== -1) packetElements.splice(trailIdx, 1);
-          }, 300);
-        }
-      }, 200);
     }
-    
-    if (progress < 1) {
+      if (progress < 1) {
       requestAnimationFrame(animate);
     } else {
       setTimeout(() => {
         if (packet.parentNode) packet.parentNode.removeChild(packet);
         const visualPacketIndex = packetElements.indexOf(packet);
         if (visualPacketIndex !== -1) packetElements.splice(visualPacketIndex, 1);
+        
+        // Clean up any remaining trails
+        trails.forEach(trail => {
+          if (trail && trail.parentNode) {
+            trail.style.opacity = '0';
+            setTimeout(() => {
+              if (trail && trail.parentNode) trail.parentNode.removeChild(trail);
+            }, 200);
+          }
+        });
+        
         if (onComplete) onComplete();
       }, 100);
     }
@@ -222,8 +264,7 @@ function animatePacketWithParams(source, target, packetId, packetSize) {
   const sourcePos = positions[source];
   const hubPos = positions["hub"];
   const targetPos = positions[target];
-  
-  // Use network div instead of canvas for positioning
+    // Use network div instead of canvas for positioning
   const networkDiv = document.getElementById('network');
   if (!networkDiv) {
       addLogEntry("Animation failed: Network div not found", "error");
@@ -232,8 +273,8 @@ function animatePacketWithParams(source, target, packetId, packetSize) {
       return;
   }
   const rect = networkDiv.getBoundingClientRect();
-  const centerX = rect.left + (rect.width / 2);
-  const centerY = rect.top + (rect.height / 2);
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
   
   const sizeSpeedFactor = 1 + ((packetSize - 64) / 1436); // Larger packets are slower
   const adjustedSpeed = PACKET_SPEED * sizeSpeedFactor;
@@ -418,8 +459,7 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
     if (!trafficData[target]) trafficData[target] = { packetsSent: 0, packetsReceived: 0, lastUpdate: Date.now() };
     trafficData[target].packetsReceived++;
   });
-  
-  // Use network div instead of canvas for positioning
+    // Use network div instead of canvas for positioning
   const networkDiv = document.getElementById('network');
   if (!networkDiv) {
     addLogEntry("Broadcast animation failed: Network div not found", "error");
@@ -427,8 +467,8 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
     return;
   }
   const rect = networkDiv.getBoundingClientRect();
-  const centerX = rect.left + (rect.width / 2);
-  const centerY = rect.top + (rect.height / 2);
+  const centerX = rect.width / 2;
+  const centerY = rect.height / 2;
   const sizeSpeedFactor = 1 + ((packetSize - 64) / 1436);
   const adjustedSpeed = PACKET_SPEED * sizeSpeedFactor;
 
