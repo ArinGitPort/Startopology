@@ -89,11 +89,7 @@
         cursor: pointer;
       }
 
-      .network-controls {
-        display: flex;
-        gap: 10px;
-        margin: 15px 0;
-      } /* Traffic visualization */
+      /* Traffic visualization */
       .traffic-low {
         color: #27ae60;
       }
@@ -182,7 +178,8 @@
       </div>
       <!-- Center Content - Header, Legend, and Network -->
       <div class="center-content">
-        <h1>Startopology Network Simulator</h1>        <div class="legend">
+        <h1>Startopology Network Simulator</h1>
+        <div class="legend">
           <div class="legend-item">
             <span class="legend-color" style="background: #00ff88"></span>
             <span>Active Connection</span>
@@ -267,9 +264,17 @@
             <span class="toggle-icon">▶</span>
           </div>
           <div class="section-content" style="display: none">
-            <button id="autoSimulate">Auto Simulate</button>
-
             <div class="network-controls">
+              <button
+                id="autoSimulate"
+                style="
+                  border-color: var(--accent-error);
+                  color: var(--accent-error);
+                "
+              >
+                Auto Simulate
+              </button>
+
               <button id="addNode">Add Node</button>
               <button id="removeNode">Remove Node</button>
               <button id="simulateCollisionBtn">Simulate Collision</button>

@@ -111,11 +111,9 @@ function updateStatusText() {
   if (!hubActive) {
     statusEl.innerHTML = 'Switch is <span class="inactive-connection">OFF</span> - All connections inactive';
     return;
-  }
-
-  const activeNodes = Object.keys(nodeStatus).filter(id => data.nodes.get(id) && nodeStatus[id]).length;
-  
-  if (activeNodes === nodeCount) {
+  }  const activeNodes = Object.keys(nodeStatus).filter(id => data.nodes.get(id) && nodeStatus[id]).length;
+    if (activeNodes === nodeCount) {
+    console.log('Setting status text to: All connections ACTIVE');
     statusEl.innerHTML = 'All connections <span class="active-connection">ACTIVE</span>';
   } else if (activeNodes === 0) {
     statusEl.innerHTML = 'All nodes <span class="inactive-connection">INACTIVE</span>';
