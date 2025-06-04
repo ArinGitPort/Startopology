@@ -81,8 +81,7 @@ body::before {
   position: fixed;
   right: 0;
   top: 0;
-  background: 
-    linear-gradient(135deg, var(--panel-gray) 0%, rgba(26, 26, 26, 0.98) 100%);
+
   backdrop-filter: blur(25px);
   border-left: 2px solid var(--accent-orange);
   box-shadow: 
@@ -123,22 +122,13 @@ h1 {
 #network {
   width: 800px;
   height: 800px;
-  background: 
-    radial-gradient(circle at 30% 30%, var(--glow-cyan) 0%, transparent 40%),
-    radial-gradient(circle at 70% 70%, var(--glow-orange) 0%, transparent 35%),
-    linear-gradient(135deg, var(--glass-bg) 0%, rgba(237, 230, 211, 0.9) 100%);
   backdrop-filter: blur(10px);
   margin: 40px auto 0 auto;
   display: block;
   position: relative;
   box-sizing: border-box;
-  border: 2px solid var(--border-gray);
   border-radius: 12px;
-  box-shadow: 
-    0 8px 32px rgba(26, 26, 26, 0.15),
-    inset 0 1px 0 rgba(255, 145, 77, 0.1),
-    inset 0 -1px 0 rgba(0, 240, 255, 0.1);
-  overflow: hidden;
+
 }
 
 .controls, 
