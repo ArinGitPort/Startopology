@@ -4,13 +4,12 @@
  */
 function createNetwork() {
   const nodes = [
-    {
-      id: "hub",
+    {      id: "hub",
       label: "Switch",
       shape: "image",
       image: "switch-hub.png",
       size: 50,
-      font: { size: 16 },
+      font: { size: 16, color: "#FFFFFF" },
       fixed: true,
       x: 0,
       y: 0,
@@ -59,11 +58,10 @@ function createNetwork() {
     nodes.push({
       id: nodeId,
       label: `PC ${i}`,
-      title: `IP: ${nodeIP}`,
-      shape: "image",
+      title: `IP: ${nodeIP}`,      shape: "image",
       image: "desktop.png",
       size: 40,
-      font: { size: 14 },
+      font: { size: 14, color: "#FFFFFF" },
       fixed: true,
       x,
       y,
@@ -78,12 +76,11 @@ function createNetwork() {
       shadowSize: 20,
       shadowX: 0,
       shadowY: 0,
-    });
-    edges.push({
+    });    edges.push({
       id: `edge${i}`,
       from: "hub",
       to: nodeId,
-      color: { color: "#000000" },
+      color: { color: "#FF9933" }, // Bright neon orange
       width: 2,
     });
   }
@@ -99,7 +96,6 @@ function createNetwork() {
     nodes: new vis.DataSet(nodes),
     edges: new vis.DataSet(edges),
   };
-
   network = new vis.Network(document.getElementById("network"), data, {
     physics: false,
     interaction: {
@@ -110,6 +106,9 @@ function createNetwork() {
     autoResize: false, // Prevent auto-resizing
     height: "800px",
     width: "800px",
+    background: {
+      color: 'rgba(0,0,0,0)' // Completely transparent background
+    }
   });
 
   network.on("click", (params) => {
@@ -165,12 +164,10 @@ function updateVisuals() {
     
     // Adjust edge width based on traffic
     if (trafficLevel === 'medium') edgeWidth = 3;
-    if (trafficLevel === 'high') edgeWidth = 4;
-    
-    data.edges.update({
+    if (trafficLevel === 'high') edgeWidth = 4;    data.edges.update({
       id: edgeId,
       color: {
-        color: active ? "#000000" : "#E53935",
+        color: active ? "#FF9933" : "#E53935", // Bright neon orange for active, red for inactive
         opacity: 1,
       },
       width: edgeWidth,
