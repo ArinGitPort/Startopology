@@ -1,63 +1,62 @@
 /**
- * Main entry point for the Star Topology Simulator.
- * This function is called when the DOM is fully loaded.
+ * Main Application Entry Point
+ * Initializes the Star Topology Simulator and sets up all event listeners
  */
+
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize floating particles background
+  // Initialize visual effects and UI components
   initFloatingParticles();
-  
-  // Initialize control event listeners
   initConfigControls(); 
   initCollapsibleSections();
-  // Create the initial network
-  createNetwork(); // This also calls updateVisuals indirectly via updateNodeSelectors
-  updateVisuals(); // Explicit call to ensure visuals are up-to-date
-  blinkInactiveEdges();
-  addLogEntry("Star Topology Simulator initialized. Welcome!", "info");
   
-  // Initialize log count display
+  // Setup network visualization and initial state
+  createNetwork();
+  updateVisuals();
+  blinkInactiveEdges();
+  
+  // Initialize logging system
+  addLogEntry("Star Topology Simulator initialized. Welcome!", "info");
   updateLogCount();
-  // Setup main event listeners for buttons and controls
-  // User Guide Listeners
+  
+  // User guide modal event handlers
   document.getElementById("showGuide").addEventListener("click", () => {
     document.getElementById("userGuide").style.display = "block";
   });
   document.getElementById("closeGuide").addEventListener("click", () => {
     document.getElementById("userGuide").style.display = "none";
-  });  document.getElementById("startDemo").addEventListener("click", () => {
-    console.log("Demo button clicked. isDemoRunning:", isDemoRunning);
+  });
+  
+  // Demo sequence controls
+  document.getElementById("startDemo").addEventListener("click", () => {
     if (isDemoRunning) {
-      console.log("Stopping demo sequence");
       stopDemoSequence();
     } else {
-      console.log("Starting demo sequence");
-      document.getElementById("userGuide").style.display = "none"; // Close the guide
+      document.getElementById("userGuide").style.display = "none";
       runDemoSequence();
     }
   });
 
-  // Packet Log Control Listeners
+  // Log management
   document.getElementById("clearLogBtn").addEventListener("click", clearPacketLog);
 
-  // Network Control Listeners
+  // Network topology controls
   document.getElementById("toggleHub").addEventListener("click", () => {
     toggleHub();
-    // blinkInactiveEdges(); // toggleHub calls updateVisuals, which handles blinking
   });
   document.getElementById("resetAll").addEventListener("click", () => {
     resetAll();
-    // blinkInactiveEdges(); // resetAll calls updateVisuals
   });
   document.getElementById("addNode").addEventListener("click", addNode);
   document.getElementById("removeNode").addEventListener("click", removeNode);
   document.getElementById("simulateCollisionBtn").addEventListener("click", simulateCollisionOnClick);
 
-  // Packet Control Listeners
+  // Packet transmission controls and validation
   document.getElementById("sendPacket").addEventListener("click", () => {
     const source = document.getElementById("sourceNode").value;
     const target = document.getElementById("targetNode").value;
     const packetMode = document.querySelector('input[name="packetMode"]:checked').value;
 
+    // Validate transmission parameters
     if (isAnimatingPacket) {
       addLogEntry("Cannot send: Animation in progress.", "error");
       return;
@@ -75,11 +74,13 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    // Execute packet transmission
     if (packetMode === "unicast") {
       sendPacketWithRetry(source, target);
     } else if (packetMode === "broadcast") {
+      // Prevent broadcast spam
       const now = Date.now();
-      if (now - lastBroadcastTime < 3000) { // Broadcast spam protection
+      if (now - lastBroadcastTime < 3000) {
         addLogEntry("Please wait before sending another broadcast.", "error");
         return;
       }
@@ -88,21 +89,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
+  // Auto simulation toggle
   document.getElementById("autoSimulate").addEventListener("click", autoSimulate);
 });
 
 /**
- * Initialize floating particles background animation
+ * Creates animated background particles for visual enhancement
  */
 function initFloatingParticles() {
   const particlesContainer = document.getElementById('particles');
-  const particleCount = 30; // Number of particles
+  const particleCount = 30;
   
+  // Create initial particles
   for (let i = 0; i < particleCount; i++) {
     createParticle(particlesContainer, i);
   }
   
-  // Continuously spawn new particles
+  // Maintain particle count with periodic creation
   setInterval(() => {
     if (particlesContainer.children.length < particleCount) {
       createParticle(particlesContainer, Math.random());
@@ -111,24 +114,20 @@ function initFloatingParticles() {
 }
 
 /**
- * Create a single floating particle
+ * Creates individual animated particle element
  */
 function createParticle(container, index) {
   const particle = document.createElement('div');
   particle.className = 'particle';
   
-  // Random size between 2px and 8px
+  // Randomize particle properties
   const size = Math.random() * 6 + 2;
   particle.style.width = `${size}px`;
   particle.style.height = `${size}px`;
-  
-  // Random horizontal position
   particle.style.left = `${Math.random() * 100}%`;
-  
-  // Random animation delay
   particle.style.animationDelay = `${Math.random() * 20}s`;
   
-  // Occasionally make horizontal particles
+  // Create occasional horizontal-moving particles
   if (Math.random() > 0.8) {
     particle.classList.add('horizontal');
     particle.style.top = `${Math.random() * 100}%`;
@@ -137,7 +136,7 @@ function createParticle(container, index) {
   
   container.appendChild(particle);
   
-  // Remove particle after animation completes
+  // Auto-cleanup after animation
   setTimeout(() => {
     if (particle.parentNode) {
       particle.parentNode.removeChild(particle);

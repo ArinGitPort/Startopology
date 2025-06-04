@@ -1,43 +1,52 @@
 /**
- * Initiates or stops the automatic simulation of packet transmissions.
+ * Simulation Control Module
+ * Handles automatic packet simulation and load testing functionality
+ */
+
+/**
+ * Initiates or stops the automatic simulation of packet transmissions
+ * Toggles between manual and automatic packet generation modes
  */
 function autoSimulate() {
   const button = document.getElementById("autoSimulate");
   if (autoSimulateInterval) {
+    // Stop auto simulation
     clearInterval(autoSimulateInterval);
     autoSimulateInterval = null;
     button.textContent = "Auto Simulate";
     addLogEntry("Auto simulation stopped", "info");
   } else {
+    // Start auto simulation
     button.textContent = "Stop Auto Simulate";
     addLogEntry("Auto simulation started", "info");
     runOneSimulation(); // Run first simulation immediately
-    autoSimulateInterval = setInterval(runOneSimulation, PACKET_SPEED * 3 + currentLatency * 2); // Adjust interval based on speed and latency
+    autoSimulateInterval = setInterval(runOneSimulation, PACKET_SPEED * 3 + currentLatency * 2);
   }
 }
 
 /**
- * Runs a single step of the automatic simulation, sending a random packet.
+ * Runs a single step of the automatic simulation
+ * Randomly selects source/target nodes and packet type (unicast/broadcast)
  */
 function runOneSimulation() {
   if (isAnimatingPacket) return;
 
+  // Get list of active nodes for simulation
   const activeNodes = [];
   for (let i = 1; i <= nodeCount; i++) {
     const nodeId = `node${i}`;
-    if (nodeStatus[nodeId] && hubActive && data.nodes.get(nodeId)) { // Ensure node exists in graph
+    if (nodeStatus[nodeId] && hubActive && data.nodes.get(nodeId)) {
       activeNodes.push(nodeId);
     }
   }
 
   if (activeNodes.length < 2) {
     addLogEntry("Auto Sim: Need at least 2 active nodes.", "error");
-    // Optionally stop autoSimulate if conditions are not met
-    // if (autoSimulateInterval) { autoSimulate(); } 
     return;
   }
 
-  const shouldBroadcast = Math.random() < 0.3; // 30% chance of broadcast
+  // Randomly choose between unicast and broadcast (30% chance of broadcast)
+  const shouldBroadcast = Math.random() < 0.3;
   const source = activeNodes[Math.floor(Math.random() * activeNodes.length)];
 
   if (shouldBroadcast) {
@@ -47,12 +56,13 @@ function runOneSimulation() {
     do {
       target = activeNodes[Math.floor(Math.random() * activeNodes.length)];
     } while (source === target);
-    sendPacketWithRetry(source, target); // Use retry for robustness in auto-sim
+    sendPacketWithRetry(source, target);
   }
 }
 
 /**
- * Runs a load test by sending a specified number of packets.
+ * Runs a comprehensive load test by sending multiple packets
+ * Tests network performance under high traffic conditions
  */
 function runLoadTest() {
   if (isAnimatingPacket) {
@@ -61,6 +71,8 @@ function runLoadTest() {
   }
 
   const numPackets = parseInt(document.getElementById('loadTestPackets').value);
+  
+  // Validate active nodes for load testing
   const activeNodes = [];
   for (let i = 1; i <= nodeCount; i++) {
     const nodeId = `node${i}`;
@@ -80,11 +92,12 @@ function runLoadTest() {
     packetsDelivered: 0,
     collisions: 0,
     deliveryTimes: [],
-    startTime: Date.now() // Record start time of the test
+    startTime: Date.now()
   };
   document.getElementById('loadTestResults').style.display = 'block';
   updateLoadTestMetrics();
 
+  // Generate and queue packets for load test
   for (let i = 0; i < numPackets; i++) {
     let source, target;
     do {
@@ -97,13 +110,14 @@ function runLoadTest() {
       source: source,
       target: target,
       size: currentPacketSize,
-      creationTime: Date.now() + (i * (50 + currentLatency/2)) // Stagger packet creation slightly, considering latency
+      creationTime: Date.now() + (i * (50 + currentLatency/2)) // Stagger packet creation
     };
     
     packetQueue.push(packetData);
     loadTestMetrics.packetsSent++;
   }
-  updateLoadTestMetrics(); // Update sent count
+  
+  updateLoadTestMetrics();
   addLogEntry(`Load test started: ${numPackets} packets queued.`, "info");
   processPacketQueue(); // Start processing the queued packets
-} 
+}

@@ -1,21 +1,24 @@
 /**
- * Creates a visual packet DOM element, optionally adjusting size based on packetSize.
- * @param {number} [packetSize=64] - The size of the packet in bytes.
- * @returns {HTMLElement} The created packet element.
+ * Packet Simulation Module
+ * Handles visual packet animation, collision detection, transmission logic, and retransmission
+ */
+
+/**
+ * Creates a visual packet DOM element with enhanced styling
  */
 function createPacketElement(packetSize = 64) {
   const packet = document.createElement('div');
   packet.className = 'packet';
-    // Make packet larger and more visible
-  const baseSize = 32; // Increased from 18 to 32 for better visibility
-  const visualSize = baseSize; // Remove size variation for now to focus on positioning
+  
+  const baseSize = 32;
+  const visualSize = baseSize;
   
   packet.style.width = `${visualSize}px`;
   packet.style.height = `${visualSize}px`;
-  packet.style.backgroundColor = '#00ff88'; // Bright green to match active connection color
-  packet.style.border = '2px solid #ffffff'; // White border for contrast
-  packet.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 255, 136, 0.3)'; // Green glow effect
-  packet.style.zIndex = '9999'; // High z-index to ensure visibility
+  packet.style.backgroundColor = '#00ff88';
+  packet.style.border = '2px solid #ffffff';
+  packet.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 255, 136, 0.3)';
+  packet.style.zIndex = '9999';
   
   const networkDiv = document.querySelector('#network');
   if (networkDiv) {
@@ -25,9 +28,7 @@ function createPacketElement(packetSize = 64) {
 }
 
 /**
- * Creates a visual packet trail DOM element.
- * @param {number} [packetSize=64] - The size of the packet in bytes (affects trail visual).
- * @returns {HTMLElement} The created trail element.
+ * Creates a visual trail element that follows packets for enhanced animation
  */
 function createTrailElement(packetSize = 64) {
   const trail = document.createElement('div');
@@ -57,47 +58,32 @@ function createTrailElement(packetSize = 64) {
 }
 
 /**
- * Enhanced packet cleanup with comprehensive error handling
+ * Comprehensive cleanup of all packet visual elements with error handling
  */
 function cleanupPacketElements() {
   try {
     if (!Array.isArray(packetElements)) {
-      console.warn("packetElements is not an array, reinitializing");
       packetElements = [];
       return;
     }
 
-    const elementsToRemove = [...packetElements]; // Create copy to avoid mutation during iteration
+    const elementsToRemove = [...packetElements];
     let removedCount = 0;
-    let errorCount = 0;
 
     elementsToRemove.forEach((element, index) => {
       try {
         if (element && element.parentNode) {
           element.parentNode.removeChild(element);
           removedCount++;
-        } else if (element) {
-          // Element exists but not in DOM - log for debugging
-          console.warn(`Packet element at index ${index} not in DOM:`, element);
         }
       } catch (error) {
         console.error(`Error removing packet element at index ${index}:`, error);
-        errorCount++;
       }
     });
 
-    // Clear the array
     packetElements.length = 0;
-
-    // Log cleanup results for debugging
-    if (removedCount > 0 || errorCount > 0) {
-      console.log(`Packet cleanup: removed ${removedCount} elements, ${errorCount} errors`);
-    }
-
-    // Reset animation state
     isAnimatingPacket = false;
     
-    // Clear active packets array
     if (Array.isArray(activePackets)) {
       activePackets.length = 0;
     } else {
@@ -106,7 +92,6 @@ function cleanupPacketElements() {
 
   } catch (error) {
     console.error("Critical error in cleanupPacketElements:", error);
-    // Fallback: force reset arrays
     packetElements = [];
     activePackets = [];
     isAnimatingPacket = false;
@@ -114,8 +99,7 @@ function cleanupPacketElements() {
 }
 
 /**
- * Creates a pulse effect at a specified node's position.
- * @param {string} nodeId - The ID of the node to apply the pulse effect to.
+ * Creates a pulse effect at a node's position to indicate packet activity
  */
 function pulseEffect(nodeId) {
   const positions = network.getPositions([nodeId]);
@@ -127,17 +111,17 @@ function pulseEffect(nodeId) {
   const nodePosition = positions[nodeId];
   const networkDiv = document.getElementById('network');
   if (!networkDiv) return;
-    // Get the actual network div dimensions for proper positioning
+  
   const networkRect = networkDiv.getBoundingClientRect();
   const centerX = networkRect.width / 2;
-  const centerY = networkRect.height / 2;  // Adjust coordinates to center pulse on nodes
-  const pulseSize = 32; // Assuming same size as packet for consistency
+  const centerY = networkRect.height / 2;
+  
+  const pulseSize = 32;
   const offset = pulseSize / 2;
   
-  // Use same adjustment ratios as packet positioning for resolution independence
+  // Calculate positioning adjustments for proper centering
   const xAdjustmentRatio = 17 / networkRect.width;
   const yAdjustmentRatio = 68 / networkRect.height;
-  
   const xAdjustment = networkRect.width * xAdjustmentRatio;
   const yAdjustment = networkRect.height * yAdjustmentRatio;
   
@@ -145,31 +129,37 @@ function pulseEffect(nodeId) {
   const y = centerY + nodePosition.y - offset + yAdjustment;
 
   const pulse = document.createElement('div');
-  pulse.className = 'packet pulse-effect'; // Uses packet styles for consistency
+  pulse.className = 'packet pulse-effect';
   pulse.style.left = `${x}px`;
   pulse.style.top = `${y}px`;
   networkDiv.appendChild(pulse);
-  packetElements.push(pulse); // Manage with other packet elements
+  packetElements.push(pulse);
 
   setTimeout(() => {
     if (pulse && pulse.parentNode) pulse.parentNode.removeChild(pulse);
     const index = packetElements.indexOf(pulse);
     if (index !== -1) packetElements.splice(index, 1);
-  }, 500); // Duration of pulse animation
+  }, 500);
 }
 
 /**
- * Animates a packet along a path between two points with latency considerations.
- * @param {number} x1 - Starting X coordinate.
- * @param {number} y1 - Starting Y coordinate.
- * @param {number} x2 - Ending X coordinate.
- * @param {number} y2 - Ending Y coordinate.
- * @param {number} centerX - Center X of the network canvas for coordinate adjustments.
- * @param {number} centerY - Center Y of the network canvas.
- * @param {string} packetId - The unique ID of the packet being animated.
- * @param {number} packetSize - The size of the packet in bytes.
- * @param {number} duration - The calculated duration for the animation segment.
- * @param {function} onComplete - Callback function to execute upon animation completion.
+ * Animates a packet along a path between two points with latency and collision detection
+ * @param {number} x1 - Starting X coordinate
+ * @param {number} y1 - Starting Y coordinate  
+ * @param {number} x2 - Ending X coordinate
+ * @param {number} y2 - Ending Y coordinate
+ /**
+ * Animates packet along a path with latency and visual effects
+ * @param {number} x1 - Start X coordinate
+ * @param {number} y1 - Start Y coordinate  
+ * @param {number} x2 - End X coordinate
+ * @param {number} y2 - End Y coordinate
+ * @param {number} centerX - Center X of the network canvas
+ * @param {number} centerY - Center Y of the network canvas
+ * @param {string} packetId - Unique ID of the packet being animated
+ * @param {number} packetSize - Size of the packet in bytes
+ * @param {number} duration - Animation duration in milliseconds
+ * @param {function} onComplete - Callback function for animation completion
  */
 function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, packetId, packetSize, duration, onComplete) {
   const networkDiv = document.getElementById('network');
@@ -181,17 +171,17 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
   
   const packet = createPacketElement(packetSize);
   packetElements.push(packet);
-  // Get the actual network div position and dimensions
+  
   const networkRect = networkDiv.getBoundingClientRect();
   const networkCenterX = networkRect.width / 2;
-  const networkCenterY = networkRect.height / 2;  // For positioning within the network div (relative positioning)  // Adjust coordinates to center packet on nodes (since CSS positioning uses top-left corner)
-  const currentPacketSize = 32; // Current packet size we're using for positioning
-  const offset = currentPacketSize / 2; // Half the packet size to center it
+  const networkCenterY = networkRect.height / 2;
   
-  // Make adjustments relative to network size for resolution independence
-  // These ratios are calculated to match the previous fixed values (17px, 68px) on 2K resolution
-  const xAdjustmentRatio = 17 / networkRect.width; // Convert 17px to ratio
-  const yAdjustmentRatio = 68 / networkRect.height; // Convert 68px to ratio
+  // Calculate positioning with centering offset
+  const currentPacketSize = 32;
+  const offset = currentPacketSize / 2;
+  
+  const xAdjustmentRatio = 17 / networkRect.width;
+  const yAdjustmentRatio = 68 / networkRect.height;
   const xAdjustment = networkRect.width * xAdjustmentRatio;
   const yAdjustment = networkRect.height * yAdjustmentRatio;
   
@@ -200,22 +190,14 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
   const endX = networkCenterX + x2 - offset + xAdjustment;
   const endY = networkCenterY + y2 - offset + yAdjustment;
   
-  // Debug logging for coordinate alignment
-  console.log('Network positioning debug:', {
-    networkRect: { width: networkRect.width, height: networkRect.height },
-    networkCenter: { x: networkCenterX, y: networkCenterY },
-    visJsCoords: { x1, y1, x2, y2 },
-    offset: offset,
-    finalCoords: { startX, startY, endX, endY }
-  });
-    const startTime = performance.now();
-  const trails = []; // Array to store trail elements
+  const startTime = performance.now();
+  const trails = [];
   let lastTrailTime = 0;
-  const trailInterval = 50; // Create trail every 50ms
+  const trailInterval = 50;
 
   function animate(currentTime) {
-    if (!packet.parentNode) { // Packet removed (e.g., due to collision)
-      // Clean up trails
+    if (!packet.parentNode) {
+      // Clean up trails if packet was removed
       trails.forEach(trail => {
         if (trail && trail.parentNode) trail.parentNode.removeChild(trail);
       });
@@ -233,7 +215,7 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
     packet.style.left = `${currentX}px`;
     packet.style.top = `${currentY}px`;
     
-    // Create trail effect
+    // Create animated trail effect
     if (currentTime - lastTrailTime > trailInterval) {
       const trail = createTrailElement(packetSize);
       trail.style.left = `${currentX}px`;
@@ -241,7 +223,7 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
       trails.push(trail);
       lastTrailTime = currentTime;
       
-      // Remove trail after delay with fade effect
+      // Remove trail with fade effect
       setTimeout(() => {
         if (trail && trail.parentNode) {
           trail.style.opacity = '0';
@@ -255,11 +237,13 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
       }, 800);
     }
     
+    // Update packet position for collision detection
     const packetIndex = activePackets.findIndex(p => p.id === packetId);
     if (packetIndex !== -1) {
-      activePackets[packetIndex].currentPosition = { x: currentX, y: currentY }; // For collision detection
+      activePackets[packetIndex].currentPosition = { x: currentX, y: currentY };
     }
     
+    // Check for collisions with other packets
     if (enableCollisions) {
       const hasCollision = checkCollisions(packetId, { x: currentX, y: currentY });
       if (hasCollision) {
@@ -270,19 +254,20 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
         if (packetIndex !== -1) activePackets.splice(packetIndex, 1);
         isAnimatingPacket = false;
         if (packetQueue.length > 0) setTimeout(processPacketQueue, 100);
-        // onComplete is not called here as the packet did not reach its destination
         return; 
       }
     }
-      if (progress < 1) {
+    
+    if (progress < 1) {
       requestAnimationFrame(animate);
     } else {
+      // Animation completed successfully
       setTimeout(() => {
         if (packet.parentNode) packet.parentNode.removeChild(packet);
         const visualPacketIndex = packetElements.indexOf(packet);
         if (visualPacketIndex !== -1) packetElements.splice(visualPacketIndex, 1);
         
-        // Clean up any remaining trails
+        // Clean up remaining trails
         trails.forEach(trail => {
           if (trail && trail.parentNode) {
             trail.style.opacity = '0';
@@ -300,12 +285,7 @@ function animatePacketAlongPathWithLatency(x1, y1, x2, y2, centerX, centerY, pac
 }
 
 /**
- * Animates a packet from source to target, considering packet size and latency.
- * This involves a two-step animation: source -> hub, then hub -> target.
- * @param {string} source - Source node ID.
- * @param {string} target - Target node ID.
- * @param {string} packetId - Unique ID for the packet.
- * @param {number} packetSize - Size of the packet in bytes.
+ * Animates a packet from source to target through the hub
  */
 function animatePacketWithParams(source, target, packetId, packetSize) {
   const positions = network.getPositions([source, "hub", target]);
@@ -418,7 +398,8 @@ function sendPacketBetweenNodes(source, target, packetSize = currentPacketSize) 
  * Initiates packet sending with retry logic.
  * @param {string} source - Source node ID.
  * @param {string} target - Target node ID.
- * @param {number} [attempts=3] - Number of retry attempts remaining.
+ /**
+ * Sends packet with retry mechanism for failed transmissions
  */
 function sendPacketWithRetry(source, target, attempts = 3) {
   if (!canTransmit(source, target)) {
@@ -429,7 +410,7 @@ function sendPacketWithRetry(source, target, attempts = 3) {
       addLogEntry(`Delivery to ${target.replace("node", "PC ")} failed after multiple attempts`, "error");
       document.getElementById("packetStatus").innerHTML = 
         `<span class="inactive-connection">DELIVERY FAILED to ${target.replace("node", "PC ")}</span>`;
-      isAnimatingPacket = false; // Ensure state is reset if all retries fail
+      isAnimatingPacket = false;
        if (packetQueue.length > 0) setTimeout(processPacketQueue, 100);
     }
     return;
@@ -438,8 +419,7 @@ function sendPacketWithRetry(source, target, attempts = 3) {
 }
 
 /**
- * Initiates a broadcast packet from the source node to all other active nodes.
- * @param {string} source - Source node ID.
+ * Broadcasts packet from source to all active nodes via hub
  */
 function broadcastPacket(source) {
   if (!source) {
@@ -480,16 +460,11 @@ function broadcastPacket(source) {
   isAnimatingPacket = true;
   clearInterval(blinkInterval);
   cleanupPacketElements();
-  // Pulse effect at source happens in animateBroadcastWithParams
   animateBroadcastWithParams(source, targets, broadcastId, currentPacketSize);
 }
 
 /**
- * Animates a broadcast packet from source to hub, then hub to all targets.
- * @param {string} source - Source node ID.
- * @param {Array<string>} targets - Array of target node IDs.
- * @param {string} basePacketId - Base ID for the broadcast packets.
- * @param {number} packetSize - Size of the packet.
+ * Animates broadcast packet from source to hub, then hub to all targets
  */
 function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
   const nodeIds = [source, "hub", ...targets];
@@ -498,14 +473,12 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
   if (!positions[source] || !positions["hub"]) {
       addLogEntry(`Broadcast animation failed: Node position not found for ${source} or hub`, "error");
       isAnimatingPacket = false;
-      // No activePackets to clean up yet for the source->hub part if it fails here.
       if (packetQueue.length > 0) setTimeout(processPacketQueue, 100);
       return;
   }
   targets.forEach(target => {
       if (!positions[target]) {
           addLogEntry(`Broadcast animation failed: Node position not found for target ${target}`, "error");
-          // Potentially skip this target or halt all, for now, log and continue hoping other targets are fine.
       }
   });
   
@@ -515,7 +488,7 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
     if (!trafficData[target]) trafficData[target] = { packetsSent: 0, packetsReceived: 0, lastUpdate: Date.now() };
     trafficData[target].packetsReceived++;
   });
-    // Use network div instead of canvas for positioning
+  
   const networkDiv = document.getElementById('network');
   if (!networkDiv) {
     addLogEntry("Broadcast animation failed: Network div not found", "error");
@@ -528,15 +501,15 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
   const sizeSpeedFactor = 1 + ((packetSize - 64) / 1436);
   const adjustedSpeed = PACKET_SPEED * sizeSpeedFactor;
 
-  pulseEffect(source); // Pulse source at the beginning of broadcast
+  pulseEffect(source);
   addLogEntry(`Broadcast: ${source.replace("node", "PC ")} to Switch`, "info");
 
-  // Register source-to-hub packet for collision detection and tracking
+  // Register source-to-hub packet for collision detection
   const sourceToHubPacketId = basePacketId + '-source-hub';
   activePackets.push({
       id: sourceToHubPacketId,
       source: source,
-      target: 'hub', // Target is hub for this segment
+      target: 'hub',
       creationTime: Date.now(),
       size: packetSize,
       path: [source, 'hub'],
@@ -545,7 +518,7 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
 
   animatePacketAlongPathWithLatency(positions[source].x, positions[source].y, positions["hub"].x, positions["hub"].y, centerX, centerY, sourceToHubPacketId, packetSize, adjustedSpeed, () => {
     const sourceToHubIndex = activePackets.findIndex(p => p.id === sourceToHubPacketId);
-    if (sourceToHubIndex !== -1) activePackets.splice(sourceToHubIndex, 1); // Remove after segment completion
+    if (sourceToHubIndex !== -1) activePackets.splice(sourceToHubIndex, 1);
 
     pulseEffect("hub");
     addLogEntry(`Broadcast: Arrived at Switch (latency: ${currentLatency}ms), fanning out...`, "info");
@@ -553,20 +526,19 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
     setTimeout(() => {
       let animationsCompleted = 0;
       targets.forEach((target, index) => {
-        if (!positions[target]) return; // Skip if target position was not found earlier
+        if (!positions[target]) return;
         
         const hubToTargetPacketId = `${basePacketId}-hub-target-${index}`;
         activePackets.push({
             id: hubToTargetPacketId,
             source: 'hub',
             target: target,
-            creationTime: Date.now(), // Staggering might be complex with collision detection
+            creationTime: Date.now(),
             size: packetSize,
             path: ['hub', target],
-            currentSegment: 0 // Represents hub -> target segment for this packet
+            currentSegment: 0
         });
 
-        // Stagger animation start slightly for visual effect (optional)
         setTimeout(() => {
             addLogEntry(`Broadcast: Switch to ${target.replace("node", "PC ")}`, "info");
             animatePacketAlongPathWithLatency(positions["hub"].x, positions["hub"].y, positions[target].x, positions[target].y, centerX, centerY, hubToTargetPacketId, packetSize, adjustedSpeed, () => {
@@ -577,7 +549,7 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
                 if (pData) {
                     const deliveryTime = Date.now() - pData.creationTime;
                     loadTestMetrics.deliveryTimes.push(deliveryTime);
-                    loadTestMetrics.packetsDelivered++; // Count each leg of broadcast as delivered
+                    loadTestMetrics.packetsDelivered++;
                     updateLoadTestMetrics();
                 }
                 const packetIndex = activePackets.findIndex(p => p.id === hubToTargetPacketId);
@@ -593,17 +565,14 @@ function animateBroadcastWithParams(source, targets, basePacketId, packetSize) {
                   if (packetQueue.length > 0) setTimeout(processPacketQueue, 100);
                 }
             });
-        }, index * 50); // Slight stagger for fanning out effect
+        }, index * 50);
       });
     }, currentLatency);
   });
 }
 
 /**
- * Checks for collisions between the current packet and other active packets.
- * @param {string} packetId - The ID of the current packet.
- * @param {{x: number, y: number}} position - The current position of the packet.
- * @returns {boolean} True if a collision occurred, false otherwise.
+ * Checks for packet collisions in network segments
  */
 function checkCollisions(packetId, position) {
   if (!enableCollisions) return false;
@@ -679,60 +648,55 @@ function checkCollisions(packetId, position) {
         const otherPIndex = activePackets.findIndex(p => p.id === otherPacket.id);
         if(otherPIndex !== -1) activePackets.splice(otherPIndex, 1);
       }
-      
       // Schedule retransmission after exponential backoff
-      addLogEntry("Collision resolution: Packets will be retransmitted after a random backoff time.", "info");
+    addLogEntry("Collision resolution: Packets will be retransmitted after a random backoff time.", "info");
+    
+    // For each packet that collided, schedule retransmission with random backoff
+    packetsToRetry.forEach((packet, index) => {
+      const baseBackoff = 500; // Base backoff in milliseconds
+      const randomMultiplier = 1 + Math.random() * 4; // Random multiplier between 1-5
+      const backoffTime = baseBackoff * randomMultiplier;
       
-      // For each packet that collided, schedule retransmission with random backoff
-      packetsToRetry.forEach((packet, index) => {
-        // Exponential backoff algorithm: Wait between 0.5 to 2.5 seconds, with some randomness
-        // Each subsequent retry should have a progressively longer average backoff
-        const baseBackoff = 500; // Base backoff in milliseconds
-        const randomMultiplier = 1 + Math.random() * 4; // Random multiplier between 1-5
-        const backoffTime = baseBackoff * randomMultiplier;
-        
-        setTimeout(() => {
-          // Only retransmit if the nodes and hub are still active
-          if (hubActive && nodeStatus[packet.source] && nodeStatus[packet.target]) {
-            addLogEntry(`Automatically retransmitting packet from ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")} after ${Math.round(backoffTime)}ms backoff`, "info");
-            
-            // Create a new packet with the same source/target but different ID
-            const newPacketData = {
-              id: 'retry-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-              source: packet.source,
-              target: packet.target,
-              size: packet.size,
-              creationTime: Date.now(),
-              retryCount: (packet.retryCount || 0) + 1
-            };
-            
-            // Add to queue or send directly based on current system state
-            if (isAnimatingPacket) {
-              packetQueue.push(newPacketData);
-              updateQueueVisualization();
-              addLogEntry(`Queued retransmission for ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")}`, "info");
-            } else {
-              sendPacketWithData(newPacketData);
-            }
+      setTimeout(() => {
+        // Only retransmit if the nodes and hub are still active
+        if (hubActive && nodeStatus[packet.source] && nodeStatus[packet.target]) {
+          addLogEntry(`Automatically retransmitting packet from ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")} after ${Math.round(backoffTime)}ms backoff`, "info");
+          
+          // Create a new packet with the same source/target but different ID
+          const newPacketData = {
+            id: 'retry-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+            source: packet.source,
+            target: packet.target,
+            size: packet.size,
+            creationTime: Date.now(),
+            retryCount: (packet.retryCount || 0) + 1
+          };
+          
+          // Add to queue or send directly based on current system state
+          if (isAnimatingPacket) {
+            packetQueue.push(newPacketData);
+            updateQueueVisualization();
+            addLogEntry(`Queued retransmission for ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")}`, "info");
           } else {
-            addLogEntry(`Canceled retransmission for ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")}: nodes or hub inactive`, "error");
+            sendPacketWithData(newPacketData);
           }
-        }, backoffTime + (index * 200)); // Stagger retransmissions slightly
-      });
-      
-      isAnimatingPacket = activePackets.length > 0;
-      if (packetQueue.length > 0 && !isAnimatingPacket) setTimeout(processPacketQueue, 100);
+        } else {
+          addLogEntry(`Canceled retransmission for ${packet.source.replace("node", "PC ")} to ${packet.target.replace("node", "PC ")}: nodes or hub inactive`, "error");
+        }
+      }, backoffTime + (index * 200)); // Stagger retransmissions slightly
+    });
+    
+    isAnimatingPacket = activePackets.length > 0;
+    if (packetQueue.length > 0 && !isAnimatingPacket) setTimeout(processPacketQueue, 100);
 
-      return true; // Collision detected
+    return true;
     }
   }
   return false;
 }
 
 /**
- * Creates a visual effect for a collision at a given position.
- * @param {number} x - X coordinate of the collision.
- * @param {number} y - Y coordinate of the collision.
+ * Creates visual collision effect at specified coordinates
  */
 function createCollisionEffect(x, y) {
   const networkDiv = document.getElementById('network');
@@ -749,32 +713,27 @@ function createCollisionEffect(x, y) {
     if (collision.parentNode) collision.parentNode.removeChild(collision);
     const index = packetElements.indexOf(collision);
     if (index !== -1) packetElements.splice(index, 1);
-  }, 600); // Duration of collision effect
+  }, 600);
 }
 
-/**
- * Enhanced packet queue management with race condition protection
- */
-let isProcessingQueue = false; // Mutex flag to prevent race conditions
+// Packet queue management with race condition protection
+let isProcessingQueue = false;
 
 /**
- * Enhanced packet queue processing with race condition protection
+ * Processes queued packets with race condition protection
  */
 function processPacketQueue() {
   // Prevent race conditions with mutex-like flag
   if (isProcessingQueue) {
-    console.log("Queue processing already in progress, skipping");
     return;
   }
 
   if (isAnimatingPacket) {
-    // Try again later if animation is in progress
     setTimeout(() => processPacketQueue(), 100);
     return;
   }
 
   if (packetQueue.length === 0) {
-    // Nothing to process
     return;
   }
 
@@ -791,7 +750,6 @@ function processPacketQueue() {
     if (!nextPacket.source || !nextPacket.target) {
       console.error("Invalid packet data in queue:", nextPacket);
       addLogEntry("Skipping invalid packet in queue", "error");
-      // Continue to next packet
       if (packetQueue.length > 0) {
         setTimeout(() => processPacketQueue(), 50);
       }
@@ -810,15 +768,12 @@ function processPacketQueue() {
         updateLoadTestMetrics();
       }
       
-      // Continue to next packet
       setTimeout(() => processPacketQueue(), 50);
       return;
     }
 
-    // Send the packet
     sendPacketWithData(nextPacket);
     
-    // Process next packet after a delay if queue is not empty
     if (packetQueue.length > 0) {
       setTimeout(() => processPacketQueue(), 100);
     }
@@ -827,7 +782,6 @@ function processPacketQueue() {
     console.error("Error processing packet queue:", error);
     addLogEntry("Error processing packet queue", "error");
     
-    // Try to continue with next packet after error
     if (packetQueue.length > 0) {
       setTimeout(() => processPacketQueue(), 200);
     }
@@ -837,17 +791,16 @@ function processPacketQueue() {
 }
 
 /**
- * Main function to send a packet based on packetData from queue or load test.
- * @param {object} packetData - Object containing packet details (id, source, target, size, creationTime).
+ * Sends packet with specified data and handles animation
  */
 function sendPacketWithData(packetData) {
   const { source, target, size: packetSize, creationTime, id: packetId } = packetData;
 
-  // Validate again, as state might have changed since queuing
+  // Validate state
   if (!source || !target || source === target || !hubActive || !nodeStatus[source] || !nodeStatus[target] || 
       !data.nodes.get(source) || !data.nodes.get(target)) {
     addLogEntry(`Failed to send packet ${packetId ? packetId.substring(0,10) : ''}: Invalid state (nodes/hub inactive or removed).`, "error");
-    isAnimatingPacket = false; // Ensure this is reset
+    isAnimatingPacket = false;
     if (packetQueue.length > 0) setTimeout(processPacketQueue, 100);
     return;
   }
@@ -883,7 +836,7 @@ function sendPacketWithData(packetData) {
 }
 
 /**
- * Simulates a collision scenario by sending two packets to the same destination concurrently.
+ * Simulates collision by sending two packets simultaneously
  */
 function simulateCollisionOnClick() {
   if (isAnimatingPacket) {
@@ -892,7 +845,6 @@ function simulateCollisionOnClick() {
   }
   if (!enableCollisions) {
     addLogEntry("Collision simulation requires 'Enable Collision Detection' to be checked.", "warning");
-    // Proceed anyway, but it won't visually collide as expected
   }
 
   const activeNodes = [];
@@ -910,16 +862,14 @@ function simulateCollisionOnClick() {
 
   addLogEntry("Attempting to simulate a collision...", "info");
 
-  // Scenario 1: Two nodes send to a third distinct node (if available)
+  // Two nodes send to a third distinct node (if available)
   if (activeNodes.length >= 3) {
     let source1 = activeNodes[0];
     let source2 = activeNodes[1];
     let targetNode = activeNodes[2];
 
     addLogEntry(`Simulating collision: ${source1} -> ${targetNode} and ${source2} -> ${targetNode}`, "info");
-    // Send first packet (will be queued if using sendPacketWithData and queue processing)
-    // For a more direct collision, we might need to bypass or manage the queue carefully for this simulation
-    // For now, let's use the existing send mechanism. Collisions depend on timing.
+    
     sendPacketWithData({
       id: 'collision-sim-1-' + Date.now(),
       source: source1,
@@ -930,7 +880,7 @@ function simulateCollisionOnClick() {
 
     // Send second packet shortly after
     setTimeout(() => {
-       if (isAnimatingPacket && activePackets.length > 0) { // Check if the first packet is still animating
+       if (isAnimatingPacket && activePackets.length > 0) {
          sendPacketWithData({
             id: 'collision-sim-2-' + Date.now(),
             source: source2,
@@ -941,23 +891,17 @@ function simulateCollisionOnClick() {
        } else {
          addLogEntry("Collision simulation second packet not sent: first packet finished too quickly or was blocked.", "warning");
        }
-    }, 50); // Send the second packet very quickly after the first
+    }, 50);
 
-  } 
-  // Scenario 2: Two nodes send to the hub (effectively, this is like sending to different targets but contention occurs at hub)
-  // This is more naturally handled by just sending two packets from different sources to different targets.
-  // For a direct visual collision on the path to the hub, they'd need to be on the same path segment.
-  // The current collision logic should pick this up if they are close on the path to the hub.
-  else { // activeNodes.length === 2
+  } else { // activeNodes.length === 2
     let source1 = activeNodes[0];
     let source2 = activeNodes[1];
-    // No third node, so they can't send to the *same* distinct target. 
-    // We can have them send to each other, which means both send to hub first.
+    
     addLogEntry(`Simulating collision: ${source1} -> ${source2} and ${source2} -> ${source1}`, "info");
     sendPacketWithData({
       id: 'collision-sim-1-' + Date.now(),
       source: source1,
-      target: source2, // Will go via hub
+      target: source2,
       size: currentPacketSize,
       creationTime: Date.now()
     });
@@ -966,7 +910,7 @@ function simulateCollisionOnClick() {
         sendPacketWithData({
           id: 'collision-sim-2-' + Date.now(),
           source: source2,
-          target: source1, // Will go via hub
+          target: source1,
           size: currentPacketSize,
           creationTime: Date.now()
         });
