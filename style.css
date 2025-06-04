@@ -12,7 +12,7 @@
   --border-gray: #4A4A4A;
   --text-primary: #1A1A1A;
   --text-secondary: #4A4A4A;  --text-muted: #6A6A6A;
-  --glass-bg: rgba(244, 239, 228, 0.85);  --glow-orange: rgba(255, 145, 77, 0.3);
+  --glass-bg: #F4EFE4;  --glow-orange: rgba(255, 145, 77, 0.3);
   --glow-cyan: rgba(74, 189, 172, 0.4); /* Increased opacity and matching the new teal */
 }
 
@@ -72,7 +72,7 @@ body::before {
   right: 0;
   top: 0;
 
-  background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(244, 239, 228, 0.95) 100%);
+  background: var(--bg-warm-light); /* Solid background color */
   border-left: 2px solid var(--accent-orange);
   box-shadow: 
     -8px 0 32px rgba(255, 145, 77, 0.15),
@@ -127,7 +127,7 @@ body::before {
 }
 
 .sidebar select {
-  background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(244, 239, 228, 0.9) 100%);
+  background: var(--bg-warm-light); /* Solid background */
   border: 2px solid var(--accent-orange);
   color: var(--text-primary);
   font-family: 'Inter', sans-serif;
@@ -929,8 +929,7 @@ select:focus {
   margin-bottom: 20px;
   border-radius: 12px;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(244, 239, 228, 0.95) 100%);
-  backdrop-filter: blur(15px);
+  background: var(--bg-warm-light); /* Solid background */
   border: 2px solid var(--border-gray);
   box-shadow: 
     0 8px 24px rgba(26, 26, 26, 0.1),
