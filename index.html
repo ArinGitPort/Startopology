@@ -3,14 +3,14 @@
   <head>
     <title>Star Topology Simulator</title>
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
     <style>
       /* Packet animation styles */
       .packet {
         position: absolute;
         width: 16px;
         height: 16px;
-        background-color: #FFEB3B;
+        background-color: #ffeb3b;
         border-radius: 50%;
         box-shadow: 0 0 10px rgba(255, 235, 59, 0.8);
         z-index: 1000;
@@ -31,8 +31,14 @@
         animation: pulse 0.5s ease-out;
       }
       @keyframes pulse {
-        0% { transform: scale(1); opacity: 1; }
-        100% { transform: scale(2); opacity: 0; }
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(2);
+          opacity: 0;
+        }
       }
 
       /* Layout styles */
@@ -56,7 +62,7 @@
       .main-content {
         flex-grow: 1;
         margin-right: 300px;
-      }      /* Packet Log - Basic structure (detailed styles in style.css) */
+      } /* Packet Log - Basic structure (detailed styles in style.css) */
       .packet-log {
         margin-top: 30px;
       }
@@ -73,44 +79,68 @@
         align-items: center;
         gap: 5px;
         cursor: pointer;
-      }      .network-controls {
+      }
+      .network-controls {
         display: flex;
         flex-direction: column;
         gap: 10px;
         margin: 15px 0;
-      }/* Traffic visualization */
+      } /* Traffic visualization */
       .traffic-low {
         color: #27ae60;
       }
-      
+
       .traffic-medium {
-        color: #FFA500; /* Orange */
+        color: #ffa500; /* Orange */
       }
-      
+
       .traffic-high {
         color: #e74c3c;
       }
     </style>
-  </head>  <body>
-    
+  </head>
+  <body>
     <!-- User Guide Section -->
     <div id="userGuide" class="user-guide">
       <h2>Star Topology Simulator - User Guide</h2>
       <button id="closeGuide" class="close-guide">×</button>
       <div class="guide-content">
         <h3>Overview</h3>
-        <p>This simulator demonstrates a star network topology where all nodes connect to a central switch. Data transmission between nodes must pass through the switch.</p>
-        
+        <p>
+          This simulator demonstrates a star network topology where all nodes
+          connect to a central switch. Data transmission between nodes must pass
+          through the switch.
+        </p>
+
         <h3>Main Features</h3>
         <ul>
-          <li><strong>Node Management:</strong> Add/remove nodes or toggle their active state by clicking on them</li>
-          <li><strong>Switch Control:</strong> Toggle the switch state to simulate central point failure</li>
-          <li><strong>Packet Transmission:</strong> Send unicast (node to node) or broadcast (node to all) packets</li>
-          <li><strong>Network Configuration:</strong> Adjust latency, packet size, and enable/disable collision detection</li>
-          <li><strong>Load Testing:</strong> Test network performance under different loads</li>
-          <li><strong>Collision Resolution:</strong> When collisions occur, packets are automatically retransmitted after a random backoff period, simulating real network behavior</li>
+          <li>
+            <strong>Node Management:</strong> Add/remove nodes or toggle their
+            active state by clicking on them
+          </li>
+          <li>
+            <strong>Switch Control:</strong> Toggle the switch state to simulate
+            central point failure
+          </li>
+          <li>
+            <strong>Packet Transmission:</strong> Send unicast (node to node) or
+            broadcast (node to all) packets
+          </li>
+          <li>
+            <strong>Network Configuration:</strong> Adjust latency, packet size,
+            and enable/disable collision detection
+          </li>
+          <li>
+            <strong>Load Testing:</strong> Test network performance under
+            different loads
+          </li>
+          <li>
+            <strong>Collision Resolution:</strong> When collisions occur,
+            packets are automatically retransmitted after a random backoff
+            period, simulating real network behavior
+          </li>
         </ul>
-        
+
         <h3>Quick Start</h3>
         <ol>
           <li>Select a source node from the dropdown</li>
@@ -118,50 +148,56 @@
           <li>Click "Send Packet" to transmit data</li>
           <li>View detailed packet logging in the right sidebar</li>
         </ol>
-        
+
         <button id="startDemo" class="demo-button">Run Demo Sequence</button>
       </div>
     </div>
     <button id="showGuide" class="show-guide">Show User Guide</button>
-    
+
     <div class="main-layout">
       <div class="main-content">
         <h1>Star Topology Simulator</h1>
-        
-        <div class="legend">          <div class="legend-item">
-            <span class="legend-color" style="background: #e53935"></span>Inactive Node
+
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-color" style="background: #e53935"></span
+            >Inactive Node
           </div>
           <div class="legend-item">
-            <span class="legend-color" style="background: #FF9933"></span>Active Connection
+            <span class="legend-color" style="background: #ff9933"></span>Active
+            Connection
           </div>
           <div class="legend-item">
-            <span class="legend-color" style="background: #ffeb3b"></span>Data Packet
+            <span class="legend-color" style="background: #ffeb3b"></span>Data
+            Packet
           </div>
         </div>
-        
+
         <div id="network"></div>
       </div>
-      
+
       <div class="sidebar">
-        <h2>Controls</h2>
-          <!-- Enhanced Packet Log with better visibility -->
+        <h2 style="border-bottom: 2px solid var(--accent-orange)">Controls</h2>
+        <!-- Enhanced Packet Log with better visibility -->
         <div class="packet-log">
           <div class="packet-log-header">
             <h2>Packet Log</h2>
             <div class="log-controls">
-              <button id="clearLogBtn" class="clear-log-btn" title="Clear Log">🗑️</button>
+              <button id="clearLogBtn" class="clear-log-btn" title="Clear Log">
+                🗑️
+              </button>
               <span id="logCount" class="log-count">0 entries</span>
             </div>
           </div>
           <div class="log-container" id="packetLog"></div>
         </div>
-        
+
         <div class="status" id="status">
           All connections <span class="active-connection">ACTIVE</span>
         </div>
-        
+
         <div class="status" id="packetStatus"></div>
-        
+
         <!-- Essential Controls Section -->
         <div class="collapsible-section">
           <div class="section-header expanded">
@@ -173,7 +209,7 @@
               <button id="toggleHub">Toggle Switch (ON)</button>
               <button id="resetAll">Reset All</button>
             </div>
-            
+
             <div class="packet-controls">
               <select id="sourceNode">
                 <option value="">Select Source Node</option>
@@ -194,60 +230,108 @@
                 <option value="node6">PC 6</option>
               </select>
               <div class="packet-mode">
-                <label><input type="radio" name="packetMode" value="unicast" checked> Unicast</label>
-                <label><input type="radio" name="packetMode" value="broadcast"> Broadcast</label>
+                <label
+                  ><input
+                    type="radio"
+                    name="packetMode"
+                    value="unicast"
+                    checked
+                  />
+                  Unicast</label
+                >
+                <label
+                  ><input type="radio" name="packetMode" value="broadcast" />
+                  Broadcast</label
+                >
               </div>
               <button id="sendPacket">Send Packet</button>
             </div>
           </div>
         </div>
-        
+
         <!-- Advanced Controls Section (Collapsed by default) -->
         <div class="collapsible-section">
           <div class="section-header">
             <h3>Advanced Controls</h3>
             <span class="toggle-icon">▶</span>
-          </div>          <div class="section-content" style="display: none;">
+          </div>
+          <div class="section-content" style="display: none">
             <div class="network-controls">
               <button id="autoSimulate">Auto Simulate</button>
               <button id="addNode">Add Node</button>
               <button id="removeNode">Remove Node</button>
               <button id="simulateCollisionBtn">Simulate Collision</button>
             </div>
-            
+
             <!-- Network Configuration -->
             <div class="config-panel">
               <h3>Network Configuration</h3>
-              
+
               <!-- Latency Simulation -->
               <div class="config-item">
-                <label for="latencySlider">Latency (ms): <span id="latencyValue">0</span></label>
-                <input type="range" id="latencySlider" min="0" max="1000" step="50" value="0">
+                <label for="latencySlider"
+                  >Latency (ms): <span id="latencyValue">0</span></label
+                >
+                <input
+                  type="range"
+                  id="latencySlider"
+                  min="0"
+                  max="1000"
+                  step="50"
+                  value="0"
+                />
               </div>
-              
+
               <!-- Packet Size -->
               <div class="config-item">
-                <label for="packetSizeSlider">Packet Size (bytes): <span id="packetSizeValue">64</span></label>
-                <input type="range" id="packetSizeSlider" min="32" max="1500" step="32" value="64">
+                <label for="packetSizeSlider"
+                  >Packet Size (bytes):
+                  <span id="packetSizeValue">64</span></label
+                >
+                <input
+                  type="range"
+                  id="packetSizeSlider"
+                  min="32"
+                  max="1500"
+                  step="32"
+                  value="64"
+                />
               </div>
-              
+
               <!-- Load Testing -->
               <div class="config-item">
-                <label for="loadTestPackets">Test Packets: <span id="loadTestPacketsValue">10</span></label>
-                <input type="range" id="loadTestPackets" min="5" max="50" step="5" value="10">
+                <label for="loadTestPackets"
+                  >Test Packets:
+                  <span id="loadTestPacketsValue">10</span></label
+                >
+                <input
+                  type="range"
+                  id="loadTestPackets"
+                  min="5"
+                  max="50"
+                  step="5"
+                  value="10"
+                />
                 <button id="runLoadTest">Run Load Test</button>
               </div>
-              
+
               <!-- Collision Detection Toggle -->
               <div class="config-item">
-                <label><input type="checkbox" id="enableCollisions" checked> Enable Collision Detection</label>
+                <label
+                  ><input type="checkbox" id="enableCollisions" checked />
+                  Enable Collision Detection</label
+                >
               </div>
             </div>
           </div>
         </div>
-        
+
         <!-- Load Test Results Section -->
-        <div id="loadTestResults" class="load-test-results" style="display: none;">
+        <div
+          id="loadTestResults"
+          class="load-test-results"
+          style="display: none"
+        >
           <h4>Load Test Results</h4>
           <div class="metric">
             <span>Packets Sent:</span>

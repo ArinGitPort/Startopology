@@ -89,7 +89,6 @@ body::before {
   color: var(--accent-orange);
   margin: 24px 0 16px 0;
   padding: 12px 0 10px 0;
-  border-bottom: 2px solid var(--accent-orange);
   text-shadow: 0 0 10px rgba(255, 145, 77, 0.3);
   letter-spacing: 1px;
   font-size: 20px;
@@ -442,10 +441,8 @@ select:focus {
 }
 
 .status {
-  text-align: center;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(244, 239, 228, 0.9) 100%);
-  backdrop-filter: blur(15px);
+  text-align: center;  padding: 14px;
+  background: var(--bg-warm-light); /* Solid background */
   border-radius: 10px;
   border: 1px solid var(--border-gray);
   box-shadow: 
@@ -474,12 +471,11 @@ select:focus {
 .log-container {
   max-height: 300px;
   overflow-y: auto;
-  background: linear-gradient(135deg, rgba(26, 26, 26, 0.03) 0%, rgba(26, 26, 26, 0.05) 100%);
+  background: #EFEFEF; /* Solid light background */
   border-radius: 8px;
   padding: 8px;
   margin-top: 12px;
   border: 1px solid var(--border-gray);
-  backdrop-filter: blur(5px);
 }
 
 /* Hide edge node details from vis.js */
@@ -1158,12 +1154,16 @@ select:focus {
 }
 
 .log-entry.source::before {
-  content: "📤";
+  content: "";
   position: absolute;
   right: 12px;
   top: 12px;
-  font-size: 14px;
-  filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.5));
+  width: 16px;
+  height: 16px;
+  background-color: #00F0FF; /* Cyan */
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .log-entry.target {
@@ -1175,12 +1175,16 @@ select:focus {
 }
 
 .log-entry.target::before {
-  content: "📥";
+  content: "";
   position: absolute;
   right: 12px;
   top: 12px;
-  font-size: 14px;
-  filter: drop-shadow(0 0 4px rgba(39, 174, 96, 0.5));
+  width: 16px;
+  height: 16px;
+  background-color: #4CAF50; /* Green */
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(39, 174, 96, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .log-entry.error {
@@ -1192,12 +1196,16 @@ select:focus {
 }
 
 .log-entry.error::before {
-  content: "❌";
+  content: "";
   position: absolute;
   right: 12px;
   top: 12px;
-  font-size: 14px;
-  filter: drop-shadow(0 0 4px rgba(231, 76, 60, 0.5));
+  width: 16px;
+  height: 16px;
+  background-color: #E53935; /* Red */
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .log-entry.info {
@@ -1209,12 +1217,16 @@ select:focus {
 }
 
 .log-entry.info::before {
-  content: "ℹ️";
+  content: "";
   position: absolute;
   right: 12px;
   top: 12px;
-  font-size: 14px;
-  filter: drop-shadow(0 0 4px rgba(255, 145, 77, 0.5));
+  width: 16px;
+  height: 16px;
+  background-color: #FFC107; /* Amber/Yellow */
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 145, 77, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .log-time {
