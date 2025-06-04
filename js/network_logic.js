@@ -1,127 +1,125 @@
-/**
- * Toggles the active/inactive state of a specified node.
- * @param {string} nodeId - The ID of the node to toggle.
- */
+// Toggles node active/inactive state
 function toggleNode(nodeId) {
+  if (!nodeId || !nodeStatus.hasOwnProperty(nodeId)) {
+    addLogEntry("Invalid node specified", "error");
+    return;
+  }
+  
   nodeStatus[nodeId] = !nodeStatus[nodeId];
   const status = nodeStatus[nodeId] ? "active" : "inactive";
   addLogEntry(`Node ${nodeId.replace("node", "PC ")} is now <span class="${status}-connection">${status.toUpperCase()}</span>`, "info");
   updateVisuals();
 }
 
-/**
- * Toggles the active/inactive state of the switch.
- */
+// Toggles switch active/inactive state
 function toggleHub() {
   hubActive = !hubActive;
-  document.getElementById("toggleHub").textContent = `Toggle Switch (${hubActive ? "ON" : "OFF"})`;
+  const hubButton = document.getElementById("toggleHub");
+  if (hubButton) {
+    hubButton.textContent = `Toggle Switch (${hubActive ? "ON" : "OFF"})`;
+  }
   const status = hubActive ? "active" : "inactive";
   addLogEntry(`Switch is now <span class="${status}-connection">${status.toUpperCase()}</span>`, hubActive ? "info" : "error");
   updateVisuals();
 }
 
-/**
- * Resets all nodes and the switch to their active state.
- */
+// Resets all nodes and switch to active state
 function resetAll() {
   hubActive = true;
   for (let id in nodeStatus) {
-    if (data.nodes.get(id)) { // Ensure node exists before setting status
-        nodeStatus[id] = true;
+    if (data && data.nodes && data.nodes.get(id)) {
+      nodeStatus[id] = true;
     }
   }
-  document.getElementById("toggleHub").textContent = `Toggle Switch (ON)`;
+  
+  const hubButton = document.getElementById("toggleHub");
+  if (hubButton) {
+    hubButton.textContent = "Toggle Switch (ON)";
+  }
   addLogEntry("All nodes and switch have been reset to <span class=\"active-connection\">ACTIVE</span>", "info");
   updateVisuals();
 }
 
-/**
- * Generates an IP address for a new node based on its index.
- * @param {number} nodeIndex - The index of the new node.
- * @returns {string} The generated IP address.
- */
+// Generates IP address for new node
 function generateIP(nodeIndex) {
-  return `192.168.1.${100 + nodeIndex}`; // Start from .101 to avoid conflicts with initial IPs
+  return `192.168.1.${100 + nodeIndex}`;
 }
 
-/**
- * Adds a new node to the network.
- */
+// Adds a new node to the network
 function addNode() {
-  if (isAnimatingPacket) {
-    cleanupPacketElements();
-    isAnimatingPacket = false;
+  try {
+    if (isAnimatingPacket) {
+      cleanupPacketElements();
+      isAnimatingPacket = false;
+    }
+    
+    nodeCount++;
+    const newNodeId = `node${nodeCount}`;
+    
+    nodeStatus[newNodeId] = true;
+    trafficData[newNodeId] = {
+      packetsSent: 0,
+      packetsReceived: 0,
+      lastUpdate: Date.now()
+    };
+    
+    if (!ipConfigurations[newNodeId]) {
+      ipConfigurations[newNodeId] = generateIP(nodeCount);
+    }
+    
+    createNetwork();
+    addLogEntry(`Added new node: PC ${nodeCount} (${ipConfigurations[newNodeId]})`, "info");
+  } catch (error) {
+    console.error("Error adding node:", error);
+    addLogEntry("Failed to add new node", "error");
+    nodeCount--;
   }
-  
-  nodeCount++;
-  const newNodeId = `node${nodeCount}`;
-  
-  nodeStatus[newNodeId] = true;
-  trafficData[newNodeId] = {
-    packetsSent: 0,
-    packetsReceived: 0,
-    lastUpdate: Date.now()
-  };
-  
-  if (!ipConfigurations[newNodeId]) {
-    ipConfigurations[newNodeId] = generateIP(nodeCount);
-  }
-  
-  createNetwork(); // This will also call updateNodeSelectors and updateVisuals
-  addLogEntry(`Added new node: PC ${nodeCount} (${ipConfigurations[newNodeId]})`, "info");
 }
 
-/**
- * Removes the last added node from the network.
- */
+// Removes the last added node from the network
 function removeNode() {
   if (nodeCount <= 2) {
     addLogEntry("Cannot remove node: Minimum 2 nodes required", "error");
     return;
   }
   
-  if (isAnimatingPacket) {
-    cleanupPacketElements();
-    isAnimatingPacket = false;
+  try {
+    if (isAnimatingPacket) {
+      cleanupPacketElements();
+      isAnimatingPacket = false;
+    }
+    
+    const removedNodeId = `node${nodeCount}`;
+    const removedNodeIP = ipConfigurations[removedNodeId] || `(IP not found for PC ${nodeCount})`;
+    addLogEntry(`Removed node: PC ${nodeCount} (${removedNodeIP})`, "info");
+    
+    delete nodeStatus[removedNodeId];
+    delete trafficData[removedNodeId];
+    
+    nodeCount--;
+    createNetwork();
+  } catch (error) {
+    console.error("Error removing node:", error);
+    addLogEntry("Failed to remove node", "error");
   }
-  
-  const removedNodeId = `node${nodeCount}`;
-  const removedNodeIP = ipConfigurations[removedNodeId] || `(IP not found for PC ${nodeCount})`;
-  addLogEntry(`Removed node: PC ${nodeCount} (${removedNodeIP})`, "info");
-  
-  delete nodeStatus[removedNodeId];
-  delete trafficData[removedNodeId];
-  // Optionally, remove from ipConfigurations if IPs are dynamically managed and can be reused
-  // delete ipConfigurations[removedNodeId]; 
-  
-  nodeCount--;
-  createNetwork(); // This will also call updateNodeSelectors and updateVisuals
 }
 
-/**
- * Checks if packet transmission is possible between nodes.
- * In a star topology, both nodes and the switch must be active.
- * @param {string} source - Source node ID
- * @param {string} target - Target node ID
- * @returns {boolean} - Whether transmission is possible
- */
+// Checks if packet transmission is possible between nodes
 function canTransmit(source, target) {
   if (!hubActive) {
     addLogEntry("Cannot transmit: Switch is inactive", "error");
     return false;
   }
   
-  if (!nodeStatus[source]) {
-    addLogEntry(`Cannot transmit: Source ${source.replace("node", "PC ")} is inactive`, "error");
+  if (!source || !nodeStatus[source]) {
+    addLogEntry(`Cannot transmit: Source ${source ? source.replace("node", "PC ") : "undefined"} is inactive`, "error");
     return false;
   }
   
-  // For broadcast, target might be undefined, or an array of targets. 
-  // This function is primarily for unicast or a single target check.
   if (target && !nodeStatus[target]) {
     addLogEntry(`Cannot transmit: Target ${target.replace("node", "PC ")} is inactive`, "error");
     return false;
   }
   
   return true;
-} 
+}

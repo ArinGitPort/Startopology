@@ -1,191 +1,245 @@
-/**
- * Updates the source and target node dropdown selectors in the UI.
- */
+// Updates source and target node dropdown selectors
 function updateNodeSelectors() {
-  const sourceSelect = document.getElementById("sourceNode");
-  const targetSelect = document.getElementById("targetNode");
-  
-  const sourceVal = sourceSelect.value;
-  const targetVal = targetSelect.value;
-  
-  sourceSelect.innerHTML = '<option value="">Select Source Node</option>';
-  targetSelect.innerHTML = '<option value="">Select Target Node</option>';
-  
-  for (let i = 1; i <= nodeCount; i++) {
-    const nodeId = `node${i}`;
-    const sourceOpt = document.createElement('option');
-    sourceOpt.value = nodeId;
-    sourceOpt.textContent = `PC ${i}`;
-    sourceSelect.appendChild(sourceOpt);
+  try {
+    const sourceSelect = document.getElementById("sourceNode");
+    const targetSelect = document.getElementById("targetNode");
     
-    const targetOpt = document.createElement('option');
-    targetOpt.value = nodeId;
-    targetOpt.textContent = `PC ${i}`;
-    targetSelect.appendChild(targetOpt);
-  }
-  
-  if (sourceVal && data.nodes.get(sourceVal)) sourceSelect.value = sourceVal;
-  if (targetVal && data.nodes.get(targetVal)) targetSelect.value = targetVal;
-}
-
-/**
- * Adds a log entry to the packet log display.
- * @param {string} message - The log message (can contain HTML).
- * @param {string} [type="info"] - The type of log entry (e.g., "info", "error", "source", "target").
- */
-function addLogEntry(message, type = "info") {
-  const logContainer = document.getElementById("packetLog");
-  const time = new Date().toLocaleTimeString();
-  
-  const entry = document.createElement("div");
-  entry.className = `log-entry ${type}`;
-  
-  const timeSpan = document.createElement("div");
-  timeSpan.className = "log-time";
-  timeSpan.textContent = time;
-  
-  const messageDiv = document.createElement("div");
-  messageDiv.innerHTML = message; // Use innerHTML to allow for styled spans in messages
-  
-  entry.appendChild(timeSpan);
-  entry.appendChild(messageDiv);
-  
-  // Add animation for new entries
-  entry.style.opacity = '0';
-  entry.style.transform = 'translateY(10px)';
-  
-  packetLogEntries.push(entry);
-  if (packetLogEntries.length > 50) {
-    packetLogEntries.shift(); // Remove the oldest entry
-  }
-  
-  logContainer.innerHTML = ""; // Clear existing logs
-  packetLogEntries.forEach((item, index) => {
-    logContainer.appendChild(item); // Add entries back
-    
-    // Animate only the newest entry
-    if (index === packetLogEntries.length - 1) {
-      setTimeout(() => {
-        item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        item.style.opacity = '1';
-        item.style.transform = 'translateY(0)';
-      }, 10);
+    if (!sourceSelect || !targetSelect) {
+      console.error("Node selector elements not found");
+      return;
     }
-  });
-  
-  // Update log count
-  updateLogCount();
-  
-  logContainer.scrollTop = logContainer.scrollHeight; // Scroll to the bottom
-}
-
-/**
- * Updates the log entry count display.
- */
-function updateLogCount() {
-  const logCountElement = document.getElementById("logCount");
-  if (logCountElement) {
-    const count = packetLogEntries.length;
-    logCountElement.textContent = `${count} ${count === 1 ? 'entry' : 'entries'}`;
+    
+    const sourceVal = sourceSelect.value;
+    const targetVal = targetSelect.value;
+    
+    sourceSelect.innerHTML = '<option value="">Select Source Node</option>';
+    targetSelect.innerHTML = '<option value="">Select Target Node</option>';
+    
+    for (let i = 1; i <= nodeCount; i++) {
+      const nodeId = `node${i}`;
+      const sourceOpt = document.createElement('option');
+      sourceOpt.value = nodeId;
+      sourceOpt.textContent = `PC ${i}`;
+      sourceSelect.appendChild(sourceOpt);
+      
+      const targetOpt = document.createElement('option');
+      targetOpt.value = nodeId;
+      targetOpt.textContent = `PC ${i}`;
+      targetSelect.appendChild(targetOpt);
+    }
+    
+    // Restore previous selections if valid
+    if (sourceVal && data && data.nodes && data.nodes.get(sourceVal)) {
+      sourceSelect.value = sourceVal;
+    }
+    if (targetVal && data && data.nodes && data.nodes.get(targetVal)) {
+      targetSelect.value = targetVal;
+    }
+  } catch (error) {
+    console.error("Error updating node selectors:", error);
   }
 }
 
-/**
- * Clears all packet log entries.
- */
-function clearPacketLog() {
-  packetLogEntries = [];
-  const logContainer = document.getElementById("packetLog");
-  if (logContainer) {
+// Adds a log entry to the packet log display
+function addLogEntry(message, type = "info") {
+  try {
+    const logContainer = document.getElementById("packetLog");
+    if (!logContainer) {
+      console.error("Packet log container not found");
+      return;
+    }
+    
+    const time = new Date().toLocaleTimeString();
+    const entry = document.createElement("div");
+    entry.className = `log-entry ${type}`;
+    
+    const timeSpan = document.createElement("div");
+    timeSpan.className = "log-time";
+    timeSpan.textContent = time;
+    
+    const messageDiv = document.createElement("div");
+    messageDiv.innerHTML = message;
+    
+    entry.appendChild(timeSpan);
+    entry.appendChild(messageDiv);
+    
+    entry.style.opacity = '0';
+    entry.style.transform = 'translateY(10px)';
+    
+    packetLogEntries.push(entry);
+    if (packetLogEntries.length > 50) {
+      packetLogEntries.shift();
+    }
+    
     logContainer.innerHTML = "";
-  }
-  updateLogCount();
-  addLogEntry("Packet log cleared", "info");
-}
-
-/**
- * Updates the main status text display based on network state.
- */
-function updateStatusText() {
-  const statusEl = document.getElementById("status");
-  if (!hubActive) {
-    statusEl.innerHTML = 'Switch is <span class="inactive-connection">OFF</span> - All connections inactive';
-    return;
-  }
-
-  const activeNodes = Object.keys(nodeStatus).filter(id => data.nodes.get(id) && nodeStatus[id]).length;
-  
-  if (activeNodes === nodeCount) {
-    statusEl.innerHTML = 'All connections <span class="active-connection">ACTIVE</span>';
-  } else if (activeNodes === 0) {
-    statusEl.innerHTML = 'All nodes <span class="inactive-connection">INACTIVE</span>';
-  } else {
-    statusEl.innerHTML = `<span class="active-connection">${activeNodes}</span> active, <span class="inactive-connection">${nodeCount - activeNodes}</span> inactive`;
-  }
-}
-
-/**
- * Initializes the functionality for collapsible sections in the UI.
- */
-function initCollapsibleSections() {
-  const sectionHeaders = document.querySelectorAll('.section-header');
-  sectionHeaders.forEach(header => {
-    header.addEventListener('click', function() {
-      this.classList.toggle('expanded');
-      const icon = this.querySelector('.toggle-icon');
-      icon.textContent = this.classList.contains('expanded') ? '▼' : '▶';
-      const content = this.nextElementSibling;
-      content.style.display = (content.style.display === 'none' || !content.style.display) ? 'block' : 'none';
+    packetLogEntries.forEach((item, index) => {
+      logContainer.appendChild(item);
+      
+      if (index === packetLogEntries.length - 1) {
+        setTimeout(() => {
+          item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          item.style.opacity = '1';
+          item.style.transform = 'translateY(0)';
+        }, 10);
+      }
     });
-  });
-}
-
-/**
- * Initializes the control event listeners for configuration sliders (latency, packet size, etc.).
- */
-function initConfigControls() {
-  const latencySlider = document.getElementById('latencySlider');
-  const latencyValue = document.getElementById('latencyValue');
-  latencySlider.addEventListener('input', function() {
-    currentLatency = parseInt(this.value);
-    latencyValue.textContent = currentLatency;
-  });
-  
-  const packetSizeSlider = document.getElementById('packetSizeSlider');
-  const packetSizeValue = document.getElementById('packetSizeValue');
-  packetSizeSlider.addEventListener('input', function() {
-    currentPacketSize = parseInt(this.value);
-    packetSizeValue.textContent = currentPacketSize;
-  });
-  
-  const loadTestPacketsSlider = document.getElementById('loadTestPackets');
-  const loadTestPacketsValue = document.getElementById('loadTestPacketsValue');
-  loadTestPacketsSlider.addEventListener('input', function() {
-    loadTestPacketsValue.textContent = this.value;
-  });
-  
-  document.getElementById('runLoadTest').addEventListener('click', runLoadTest);
-  
-  const enableCollisionsCheckbox = document.getElementById('enableCollisions');
-  enableCollisionsCheckbox.addEventListener('change', function() {
-    enableCollisions = this.checked;
-  });
-}
-
-/**
- * Updates the display of load test metrics.
- */
-function updateLoadTestMetrics() {
-  document.getElementById('metricSent').textContent = loadTestMetrics.packetsSent;
-  document.getElementById('metricDelivered').textContent = loadTestMetrics.packetsDelivered;
-  document.getElementById('metricCollisions').textContent = loadTestMetrics.collisions;
-  
-  let avgTime = 0;
-  if (loadTestMetrics.deliveryTimes.length > 0) {
-    avgTime = loadTestMetrics.deliveryTimes.reduce((sum, time) => sum + time, 0) / 
-              loadTestMetrics.deliveryTimes.length;
+    
+    updateLogCount();
+    logContainer.scrollTop = logContainer.scrollHeight;
+  } catch (error) {
+    console.error("Error adding log entry:", error);
   }
-  document.getElementById('metricTime').textContent = `${Math.round(avgTime)} ms`;
+}
+
+// Updates the log entry count display
+function updateLogCount() {
+  try {
+    const logCountElement = document.getElementById("logCount");
+    if (logCountElement) {
+      const count = packetLogEntries.length;
+      logCountElement.textContent = `${count} ${count === 1 ? 'entry' : 'entries'}`;
+    }
+  } catch (error) {
+    console.error("Error updating log count:", error);
+  }
+}
+
+// Clears all packet log entries
+function clearPacketLog() {
+  try {
+    packetLogEntries = [];
+    const logContainer = document.getElementById("packetLog");
+    if (logContainer) {
+      logContainer.innerHTML = "";
+    }
+    updateLogCount();
+    addLogEntry("Packet log cleared", "info");
+  } catch (error) {
+    console.error("Error clearing packet log:", error);
+  }
+}
+
+// Updates main status text display based on network state
+function updateStatusText() {
+  try {
+    const statusEl = document.getElementById("status");
+    if (!statusEl) {
+      console.error("Status element not found");
+      return;
+    }
+    
+    if (!hubActive) {
+      statusEl.innerHTML = 'Switch is <span class="inactive-connection">OFF</span> - All connections inactive';
+      return;
+    }
+
+    const activeNodes = Object.keys(nodeStatus).filter(id => 
+      data && data.nodes && data.nodes.get(id) && nodeStatus[id]
+    ).length;
+    
+    if (activeNodes === nodeCount) {
+      statusEl.innerHTML = 'All connections <span class="active-connection">ACTIVE</span>';
+    } else if (activeNodes === 0) {
+      statusEl.innerHTML = 'All nodes <span class="inactive-connection">INACTIVE</span>';
+    } else {
+      statusEl.innerHTML = `<span class="active-connection">${activeNodes}</span> active, <span class="inactive-connection">${nodeCount - activeNodes}</span> inactive`;
+    }
+  } catch (error) {
+    console.error("Error updating status text:", error);
+  }
+}
+
+// Initializes collapsible sections in the UI
+function initCollapsibleSections() {
+  try {
+    const sectionHeaders = document.querySelectorAll('.section-header');
+    sectionHeaders.forEach(header => {
+      header.addEventListener('click', function() {
+        this.classList.toggle('expanded');
+        const icon = this.querySelector('.toggle-icon');
+        if (icon) {
+          icon.textContent = this.classList.contains('expanded') ? '▼' : '▶';
+        }
+        const content = this.nextElementSibling;
+        if (content) {
+          content.style.display = (content.style.display === 'none' || !content.style.display) ? 'block' : 'none';
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Error initializing collapsible sections:", error);
+  }
+}
+
+// Initializes control event listeners for configuration sliders
+function initConfigControls() {
+  try {
+    const latencySlider = document.getElementById('latencySlider');
+    const latencyValue = document.getElementById('latencyValue');
+    if (latencySlider && latencyValue) {
+      latencySlider.addEventListener('input', function() {
+        currentLatency = parseInt(this.value);
+        latencyValue.textContent = currentLatency;
+      });
+    }
+    
+    const packetSizeSlider = document.getElementById('packetSizeSlider');
+    const packetSizeValue = document.getElementById('packetSizeValue');
+    if (packetSizeSlider && packetSizeValue) {
+      packetSizeSlider.addEventListener('input', function() {
+        currentPacketSize = parseInt(this.value);
+        packetSizeValue.textContent = currentPacketSize;
+      });
+    }
+    
+    const loadTestPacketsSlider = document.getElementById('loadTestPackets');
+    const loadTestPacketsValue = document.getElementById('loadTestPacketsValue');
+    if (loadTestPacketsSlider && loadTestPacketsValue) {
+      loadTestPacketsSlider.addEventListener('input', function() {
+        loadTestPacketsValue.textContent = this.value;
+      });
+    }
+    
+    const loadTestButton = document.getElementById('runLoadTest');
+    if (loadTestButton) {
+      loadTestButton.addEventListener('click', runLoadTest);
+    }
+    
+    const enableCollisionsCheckbox = document.getElementById('enableCollisions');
+    if (enableCollisionsCheckbox) {
+      enableCollisionsCheckbox.addEventListener('change', function() {
+        enableCollisions = this.checked;
+      });
+    }
+  } catch (error) {
+    console.error("Error initializing config controls:", error);
+  }
+}
+
+// Updates the display of load test metrics
+function updateLoadTestMetrics() {
+  try {
+    const metricElements = {
+      sent: document.getElementById('metricSent'),
+      delivered: document.getElementById('metricDelivered'),
+      collisions: document.getElementById('metricCollisions'),
+      time: document.getElementById('metricTime')
+    };
+    
+    if (metricElements.sent) metricElements.sent.textContent = loadTestMetrics.packetsSent;
+    if (metricElements.delivered) metricElements.delivered.textContent = loadTestMetrics.packetsDelivered;
+    if (metricElements.collisions) metricElements.collisions.textContent = loadTestMetrics.collisions;
+    
+    if (metricElements.time) {
+      let avgTime = 0;
+      if (loadTestMetrics.deliveryTimes.length > 0) {
+        avgTime = loadTestMetrics.deliveryTimes.reduce((sum, time) => sum + time, 0) / 
+                  loadTestMetrics.deliveryTimes.length;
+      }
+      metricElements.time.textContent = `${Math.round(avgTime)} ms`;
+    }  } catch (error) {
+    console.error("Error updating load test metrics:", error);
+  }
 }
 
 /**
